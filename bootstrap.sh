@@ -26,7 +26,8 @@ DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
 BUILD_LINUX="true"
 BUILD_DROPBEAR="true"
 BUILD_BUSYBOX="true"
-CODE_SOURCERY="none"
+
+GNU_TOOLS="`pwd`/GNU_Tools/"
 
 for i in $@; do
     case $i in
@@ -35,12 +36,19 @@ for i in $@; do
 	"--no-busybox") BUILD_BUSYBOX="false";;
 	"--gnu-tools")
 	    shift
-	    CODE_SOURCERY=$1;;
+	    GNU_TOOLS=`realpath $1`
+	    ;;
 	"--help")
 	    echo $HELP_MESSAGE
 	    exit 0;;
     esac
 done
+
+# Dependent vars
+GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
+GNU_TOOLS_BIN=$GNU_TOOLS/bin
+GNU_TOOLS_PREFIX=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-
+
 
 function get_project {
     if [ ! -d $1 ]; then
@@ -55,28 +63,9 @@ function get_project {
 }
 
 # Gnu toolchain
-GNU_TOOLS_EXIST=`(hash arm-xilinx-linux-gnueabi-gcc >/dev/null 2>&1 && echo "true")|| echo "false"`
-
-if [ $GNU_TOOLS_EXIST = "true" ]; then
-    echo "#### Gnutools found! ####"
-else
-    echo "#### Gnutools not found. ####"
-
-    if [ $CODE_SOURCERY = "none" ]
-	echo "Error: use --gnu-tools <path/to/xilinx-eabi.bin> to tell me where to find the gnutools"
-	exit 0
-    else
-	if [ `uname` = "Linux" ] \
-	    && [ -h /bin/sh ] \
-	    && `which readlink > /dev/null 2>&1` \
-	    && [ -n "`readlink /bin/sh | grep '\<dash$'`" ]; then
-	    echo "Apparently your shell in /bin/sh is dash. The gnueabi installer cannot run. I could change it but I would rather not be throwing sudos around. Link /bin/sh to /bin/bash just for now."
-	    exit 0
-	fi
-
-	echo "#### The automatic installer will now run. Pay attention ####"
-	$CODE_SOURCERY -i console
-    fi
+if [ ! -d $GNU_TOOLS ]; then
+    echo "#### The directory '$GNU_TOOLS' should contain the gnu tools. ####"
+    echo "(You may use --gnu-tools <dirname> to use your own directory)"
 fi
 
 # Linux
@@ -104,25 +93,98 @@ if [ $BUILD_BUSYBOX == "true" ]; then
     get_project busybox $BUSYBOX_GIT
 
     echo "#### Building filesystem ####"
-    make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig
-    make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- CONFIG_PREFIX="$FILESYSTEM_ROOT" install
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install
 
     cd $FILESYSTEM_ROOT
-    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/lib/* lib -r
+    cp $GNU_TOOLS/libc/lib/* lib -r
 
     # Strip libs of symbols
-    arm-xilinx-linux-gnueabi-strip lib/*
+    $GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-strip lib/*
 
     # Some supplied tools
-    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/sbin/* sbin/ -r
-    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/usr/bin/* usr/bin/ -r
+    cp $GNU_TOOLS_UTILS/libc/sbin/* sbin/ -r
+    cp $GNU_TOOLS_UTILS/libc/usr/bin/* usr/bin/ -r
 
     # Create fs structure
     mkdir dev etc etc/dropbear etc/init.d mnt opt proc root sys tmp var var/log var/www
+
+    # Specific files
+    echo "LABEL=/     /           tmpfs   defaults        0 0
+none        /dev/pts    devpts  gid=5,mode=620  0 0
+none        /proc       proc    defaults        0 0
+none        /sys        sysfs   defaults        0 0
+none        /tmp        tmpfs   defaults        0 0" > etc/fstab
+
+    echo "::sysinit:/etc/init.d/rcS
+
+# /bin/ash
+#
+# Start an askfirst shell on the serial ports
+
+ttyPS0::respawn:-/bin/ash
+
+# What to do when restarting the init process
+
+::restart:/sbin/init
+
+# What to do before rebooting
+
+::shutdown:/bin/umount -a -r" > etc/inittab
+
+    echo "root:$1$qC.CEbjC$SVJyqm.IG.gkElhaeM.FD0:0:0:root:/root:/bin/sh" > etc/passwd
+
+    echo '#!/bin/sh
+
+echo "Starting rcS..."
+
+echo "++ Mounting filesystem"
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t tmpfs none /tmp
+
+echo "++ Setting up mdev"
+
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+
+mkdir -p /dev/pts
+mkdir -p /dev/i2c
+mount -t devpts devpts /dev/pts
+
+echo "++ Starting telnet daemon"
+telnetd -l /bin/sh
+
+echo "++ Starting http daemon"
+httpd -h /var/www
+
+echo "++ Starting ftp daemon"
+tcpsvd 0:21 ftpd ftpd -w /&
+
+echo "++ Starting dropbear (ssh) daemon"
+dropbear
+
+echo "rcS Complete"' > etc/init.d/rcS
+
+    chmod 755 etc/init.d/rcS
+    sudo chown root:root etc/init.d/rcS # I dont think this is necessary
     cd $ROOT_DIR
 
+    # Build ramdisk image
+    dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
+    mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
+    tune2fs ramdisk.img -i 0
+    chmod 777 ramdisk.img
+
+    mkdir ramdisk
+    sudo mount -o loop ramdisk.img ramdisk/
+    sudo cp -R _rootfs/* ramdisk
+    sudo umount ramdisk/
+
+    gzip -9 ramdisk.img
+
 else
-    echo "#### Skipping busybox compilation ####"
+    echo "#### Skipping busybox compilation and filesystem creation. ####"
 fi
 
 # Dropbear
@@ -139,7 +201,7 @@ if [ $BUILD_DROPBEAR == "true" ]; then
 
     echo "#### Building dropbear ####"
     cd $ROOT_DIR/dropbear/*/
-    ./configure --prefix=$FILESYSTEM_ROOT --host=arm-xilinx-linux-gnueabi --disable-zlib CC=arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
+    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip
     sudo make install;		# Thre are some `chgrp 0' here so we need sudo
 
