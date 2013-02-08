@@ -55,7 +55,29 @@ function get_project {
 }
 
 # Gnu toolchain
+GNU_TOOLS_EXIST=`(hash arm-xilinx-linux-gnueabi-gcc >/dev/null 2>&1 && echo "true")|| echo "false"`
 
+if [ $GNU_TOOLS_EXIST = "true" ]; then
+    echo "#### Gnutools found! ####"
+else
+    echo "#### Gnutools not found. ####"
+
+    if [ $CODE_SOURCERY = "none" ]
+	echo "Error: use --gnu-tools <path/to/xilinx-eabi.bin> to tell me where to find the gnutools"
+	exit 0
+    else
+	if [ `uname` = "Linux" ] \
+	    && [ -h /bin/sh ] \
+	    && `which readlink > /dev/null 2>&1` \
+	    && [ -n "`readlink /bin/sh | grep '\<dash$'`" ]; then
+	    echo "Apparently your shell in /bin/sh is dash. The gnueabi installer cannot run. I could change it but I would rather not be throwing sudos around. Link /bin/sh to /bin/bash just for now."
+	    exit 0
+	fi
+
+	echo "#### The automatic installer will now run. Pay attention ####"
+	$CODE_SOURCERY -i console
+    fi
+fi
 
 # Linux
 if [ $BUILD_LINUX == "true" ]; then
@@ -84,9 +106,25 @@ if [ $BUILD_BUSYBOX == "true" ]; then
     echo "#### Building filesystem ####"
     make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig
     make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- CONFIG_PREFIX="$FILESYSTEM_ROOT" install
+
+    cd $FILESYSTEM_ROOT
+    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/lib/* lib -r
+
+    # Strip libs of symbols
+    arm-xilinx-linux-gnueabi-strip lib/*
+
+    # Some supplied tools
+    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/sbin/* sbin/ -r
+    cp /opt/14.2/ISE_DS/EDK/gnu/arm/lin64/arm-xilinx-linux-gnueabi/libc/usr/bin/* usr/bin/ -r
+
+    # Create fs structure
+    mkdir dev etc etc/dropbear etc/init.d mnt opt proc root sys tmp var var/log var/www
+    cd $ROOT_DIR
+
 else
     echo "#### Skipping busybox compilation ####"
 fi
+
 # Dropbear
 if [ $BUILD_DROPBEAR == "true" ]; then
     cd $ROOT_DIR
@@ -105,7 +143,7 @@ if [ $BUILD_DROPBEAR == "true" ]; then
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip
     sudo make install;		# Thre are some `chgrp 0' here so we need sudo
 
-# ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
+    ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 else
     echo "#### Skipping dropbear compilation ####"
 fi
