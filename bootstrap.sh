@@ -14,26 +14,42 @@
 # - Rest of the code
 
 ROOT_DIR=`pwd`
+RESOURCES_DIR=$ROOT_DIR/resources
 FILESYSTEM_ROOT=$ROOT_DIR/fs/
+
+if [ ! -d $RESOURCES_DIR ]; then
+    mkdir $RESOURCES_DIR
+fi
 
 # Git repos
 LINUX_GIT="git://git.xilinx.com/linux-xlnx.git"
 BUSYBOX_GIT="git://git.busybox.net/busybox"
+UBOOT_GIT="git://git.xilinx.com/u-boot-xlnx.git"
 
-DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
-DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
-
+# What not to build
 BUILD_LINUX="true"
 BUILD_DROPBEAR="true"
 BUILD_BUSYBOX="true"
+BUILD_UBOOT="true"
+BUILD_RAMDISK="true"
+
+# Device trees
+DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
+DTD_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtd'`
+
+# Dropbear download info
+DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
+DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
 
 for i in $@; do
     case $i in
 	"--no-linux") BUILD_LINUX="false";;
-	"--no-dropbear") BUILD_dropbear="false";;
+	"--no-dropbear") BUILD_DROPBEAR="false";;
 	"--no-busybox") BUILD_BUSYBOX="false";;
+	"--no-ramdisk") BUILD_RAMDISK="false";;
+	"--no-u-boot") BUILD_UBOOT="false";;
 	"--gnu-tools")
 	    shift
 	    GNU_TOOLS=`realpath $1`
@@ -48,7 +64,7 @@ done
 GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
 GNU_TOOLS_BIN=$GNU_TOOLS/bin
 GNU_TOOLS_PREFIX=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-
-
+CROSS_COMPILE=$GNU_TOOLS_PREFIX
 
 function get_project {
     if [ ! -d $1 ]; then
@@ -68,6 +84,14 @@ if [ ! -d $GNU_TOOLS ]; then
     echo "(You may use --gnu-tools <dirname> to use your own directory)"
 fi
 
+ # U-Boot
+if [ $BUILD_UBOOT == "true" ]; then
+    cd $ROOT_DIR
+    get_project u-boot-xlinx $UBOOT_GIT
+    make zynq_zc70x_config
+    make
+fi
+
 # Linux
 if [ $BUILD_LINUX == "true" ]; then
     cd $ROOT_DIR
@@ -77,7 +101,8 @@ if [ $BUILD_LINUX == "true" ]; then
     echo "#### Building the linux kernel. ####"
     make ARCH=arm uImage
     echo "#### Building device tree ####"
-    # scripts/dtc/dtc -I dts -O dtb -o
+    scripts/dtc/dtc -I dts -O dtb -o $DTS_TREE $DTD_TREE
+    cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
 else
     echo "#### Skipping linux compilation. ####"
 fi
@@ -168,21 +193,6 @@ echo "rcS Complete"' > etc/init.d/rcS
 
     chmod 755 etc/init.d/rcS
     sudo chown root:root etc/init.d/rcS # I dont think this is necessary
-    cd $ROOT_DIR
-
-    # Build ramdisk image
-    dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
-    mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
-    tune2fs ramdisk.img -i 0
-    chmod 777 ramdisk.img
-
-    mkdir ramdisk
-    sudo mount -o loop ramdisk.img ramdisk/
-    sudo cp -R _rootfs/* ramdisk
-    sudo umount ramdisk/
-
-    gzip -9 ramdisk.img
-
 else
     echo "#### Skipping busybox compilation and filesystem creation. ####"
 fi
@@ -208,4 +218,26 @@ if [ $BUILD_DROPBEAR == "true" ]; then
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 else
     echo "#### Skipping dropbear compilation ####"
+fi
+
+# Build ramdisk image
+if [ $BUILD_RAMDISK == "true" ]; then
+    cd $RESOURCES_DIR
+    # Build ramdisk image
+    dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
+    mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
+    tune2fs ramdisk.img -i 0
+    chmod 777 ramdisk.img
+
+    mkdir ramdisk
+    sudo mount -o loop ramdisk.img ramdisk/
+    sudo cp -R $FILESYSTEM_ROOT/* ramdisk
+    sudo umount ramdisk/
+
+    gzip -9 ramdisk.img
+
+    # U-Boot ready image
+    $ROOT_DIR/u-boot-xlinx/mkimage –A arm –T ramdisk –C gzip –d ramdisk.img.gz uramdisk.img.gz
+else
+    echo "#### Skipping ramdisk creation. ####"
 fi
