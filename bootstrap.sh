@@ -70,6 +70,11 @@ for i in $@; do
 	"--help")
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
+	*)
+	    echo "Error: Unrecognized command."
+	    echo "$HELP_MESSAGE"
+	    exit 0
+	    ;;
     esac
 done
 
