@@ -68,7 +68,7 @@ for i in $@; do
 	    ONLY_PART=$1
 	    ;;
 	"--help")
-	    echo $HELP_MESSAGE
+	    echo "$HELP_MESSAGE"
 	    exit 0;;
     esac
 done

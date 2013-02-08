@@ -1,7 +1,6 @@
 Use this single script to download and configure all components needed
 to have a functional xilinx zynq linux image and the means to load it.
 
-
 OPTIONS:
 --no-gnu-tools: Do not pull/build gnu-tools
 --no-u-boot:    Do not pull/build uboot
