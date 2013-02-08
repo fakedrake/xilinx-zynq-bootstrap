@@ -26,20 +26,25 @@ LINUX_GIT="git://git.xilinx.com/linux-xlnx.git"
 BUSYBOX_GIT="git://git.busybox.net/busybox"
 UBOOT_GIT="git://git.xilinx.com/u-boot-xlnx.git"
 
+# Zip archive
+GNU_TOOLS_FTP="ftp://astaroth/Code/zynq_gnu_tools.zip"
+
+# Dropbear download info
+DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
+DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
+
 # What not to build
 BUILD_LINUX="true"
 BUILD_DROPBEAR="true"
 BUILD_BUSYBOX="true"
 BUILD_UBOOT="true"
 BUILD_RAMDISK="true"
+GET_GNU_TOOLS="true"
 
 # Device trees
 DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
 DTD_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtd'`
 
-# Dropbear download info
-DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
-DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
 
@@ -50,10 +55,14 @@ for i in $@; do
 	"--no-busybox") BUILD_BUSYBOX="false";;
 	"--no-ramdisk") BUILD_RAMDISK="false";;
 	"--no-u-boot") BUILD_UBOOT="false";;
+	"--no-gnu-tools") GET_GNU_TOOLS="false";;
 	"--gnu-tools")
 	    shift
 	    GNU_TOOLS=`realpath $1`
 	    ;;
+	"--only")
+	    shift
+	    ONLY_PART=$1
 	"--help")
 	    echo $HELP_MESSAGE
 	    exit 0;;
@@ -83,13 +92,17 @@ function get_project {
 }
 
 # Gnu toolchain
-if [ ! -d $GNU_TOOLS ]; then
-    print_info "The directory '$GNU_TOOLS' should contain the gnu tools."
-    echo "(You may use --gnu-tools <dirname> to use your own directory)"
+if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) || [ $ONLY_PART = "gnu-tools" ]; then
+    print_info "Downloading Xilinx configured GNU tools: $GNU_TOOLS_FTP"
+    print_info "(You may use --gnu-tools <dirname> to use your own gnu-tools)"
+
+    wget $GNU_TOOLS_FTP
+    print_info "Extracting GNU tools."
+    unzip `basename $GNU_TOOLS_FTP`
 fi
 
  # U-Boot
-if [ $BUILD_UBOOT == "true" ]; then
+if [ $BUILD_UBOOT = "true" ] || [ $ONLY_PART = "uboot" ]; then
     cd $ROOT_DIR
     get_project u-boot-xlinx $UBOOT_GIT
     print_info "Configuring uboot."
@@ -99,7 +112,7 @@ if [ $BUILD_UBOOT == "true" ]; then
 fi
 
 # Linux
-if [ $BUILD_LINUX == "true" ]; then
+if [ $BUILD_LINUX = "true" ] || [ $ONLY_PART = "linux" ]; then
     cd $ROOT_DIR
     get_project linux-xlnx $LINUX_GIT
     print_info "Configuring the Linux Kernel"
@@ -115,7 +128,7 @@ fi
 
 
 # Filsystem/Busybox
-if [ $BUILD_BUSYBOX == "true" ]; then
+if [ $BUILD_BUSYBOX = "true" ] || [ $ONLY_PART = "busybox" ]; then
     cd $ROOT_DIR
     if [ ! -d $FILESYSTEM_ROOT ]; then
 	mkdir $FILESYSTEM_ROOT
@@ -204,7 +217,7 @@ else
 fi
 
 # Dropbear
-if [ $BUILD_DROPBEAR == "true" ]; then
+if [ $BUILD_DROPBEAR = "true" ] || [ $ONLY_PART = "dropbear" ]; then
     cd $ROOT_DIR
     if [ ! -d $ROOT_DIR/dropbear/ ]; then
 	mkdir $ROOT_DIR/dropbear
@@ -227,7 +240,7 @@ else
 fi
 
 # Build ramdisk image
-if [ $BUILD_RAMDISK == "true" ]; then
+if [ $BUILD_RAMDISK = "true" ] || [ $ONLY_PART = "ramdisk" ]; then
     cd $RESOURCES_DIR
     # Build ramdisk image
     dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
