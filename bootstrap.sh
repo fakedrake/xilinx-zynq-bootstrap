@@ -66,13 +66,17 @@ GNU_TOOLS_BIN=$GNU_TOOLS/bin
 GNU_TOOLS_PREFIX=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-
 CROSS_COMPILE=$GNU_TOOLS_PREFIX
 
+function print_info {
+    echo "[INFO] $1"
+}
+
 function get_project {
     if [ ! -d $1 ]; then
-	echo "#### Cloning $1: $2 ###"
+	print_info "Cloning $1: $2"
 	git clone $2 $1
 	cd "$1"
     else
-	echo "#### Updating $1 ####"
+	print_info "Updating $1"
 	cd "$1"
 	git pull
     fi
@@ -80,7 +84,7 @@ function get_project {
 
 # Gnu toolchain
 if [ ! -d $GNU_TOOLS ]; then
-    echo "#### The directory '$GNU_TOOLS' should contain the gnu tools. ####"
+    print_info "The directory '$GNU_TOOLS' should contain the gnu tools."
     echo "(You may use --gnu-tools <dirname> to use your own directory)"
 fi
 
@@ -88,7 +92,9 @@ fi
 if [ $BUILD_UBOOT == "true" ]; then
     cd $ROOT_DIR
     get_project u-boot-xlinx $UBOOT_GIT
+    print_info "Configuring uboot."
     make zynq_zc70x_config
+    print_info "Building uboot."
     make
 fi
 
@@ -96,15 +102,15 @@ fi
 if [ $BUILD_LINUX == "true" ]; then
     cd $ROOT_DIR
     get_project linux-xlnx $LINUX_GIT
-    echo "#### Configuring the Linux Kernel ####"
+    print_info "Configuring the Linux Kernel"
     make ARCH=arm xilinx_zynq_defconfig
-    echo "#### Building the linux kernel. ####"
+    print_info "Building the linux kernel."
     make ARCH=arm uImage
-    echo "#### Building device tree ####"
+    print_info "Building device tree"
     scripts/dtc/dtc -I dts -O dtb -o $DTS_TREE $DTD_TREE
     cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
 else
-    echo "#### Skipping linux compilation. ####"
+    print_info "Skipping linux compilation."
 fi
 
 
@@ -117,7 +123,7 @@ if [ $BUILD_BUSYBOX == "true" ]; then
 
     get_project busybox $BUSYBOX_GIT
 
-    echo "#### Building filesystem ####"
+    print_info "Building filesystem"
     make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig
     make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install
 
@@ -194,7 +200,7 @@ echo "rcS Complete"' > etc/init.d/rcS
     chmod 755 etc/init.d/rcS
     sudo chown root:root etc/init.d/rcS # I dont think this is necessary
 else
-    echo "#### Skipping busybox compilation and filesystem creation. ####"
+    print_info "Skipping busybox compilation and filesystem creation."
 fi
 
 # Dropbear
@@ -202,14 +208,14 @@ if [ $BUILD_DROPBEAR == "true" ]; then
     cd $ROOT_DIR
     if [ ! -d $ROOT_DIR/dropbear/ ]; then
 	mkdir $ROOT_DIR/dropbear
-	echo "#### Downloading dropbear ####"
+	print_info "Downloading dropbear"
 	wget $DROPBEAR_TAR_URL -O $ROOT_DIR/$DROPBEAR_TAR
 	echo "Uncompressing: tar xfvz $ROOT_DIR/$DROPBEAR_TAR -C $ROOT_DIR/dropbear/"
 	tar xfvz $ROOT_DIR/$DROPBEAR_TAR -C $ROOT_DIR/dropbear/
 	rm $ROOT_DIR/$DROPBEAR_TAR
     fi
 
-    echo "#### Building dropbear ####"
+    print_info "Building dropbear"
     cd $ROOT_DIR/dropbear/*/
     ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip
@@ -217,7 +223,7 @@ if [ $BUILD_DROPBEAR == "true" ]; then
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 else
-    echo "#### Skipping dropbear compilation ####"
+    print_info "Skipping dropbear compilation"
 fi
 
 # Build ramdisk image
@@ -239,5 +245,5 @@ if [ $BUILD_RAMDISK == "true" ]; then
     # U-Boot ready image
     $ROOT_DIR/u-boot-xlinx/mkimage –A arm –T ramdisk –C gzip –d ramdisk.img.gz uramdisk.img.gz
 else
-    echo "#### Skipping ramdisk creation. ####"
+    print_info "Skipping ramdisk creation."
 fi
