@@ -13,6 +13,8 @@
 # - Gnu Toolchain: either ask for a path to the gnu tools
 # - Rest of the code
 
+HELP_MESSAGE=`cat README.txt`
+
 ROOT_DIR=`pwd`
 RESOURCES_DIR=$ROOT_DIR/resources
 FILESYSTEM_ROOT=$ROOT_DIR/fs/
@@ -40,6 +42,7 @@ BUILD_BUSYBOX="true"
 BUILD_UBOOT="true"
 BUILD_RAMDISK="true"
 GET_GNU_TOOLS="true"
+ONLY_PART="all"
 
 # Device trees
 DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
@@ -63,6 +66,7 @@ for i in $@; do
 	"--only")
 	    shift
 	    ONLY_PART=$1
+	    ;;
 	"--help")
 	    echo $HELP_MESSAGE
 	    exit 0;;
@@ -92,7 +96,7 @@ function get_project {
 }
 
 # Gnu toolchain
-if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) || [ $ONLY_PART = "gnu-tools" ]; then
+if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "gnu-tools" ]); then
     print_info "Downloading Xilinx configured GNU tools: $GNU_TOOLS_FTP"
     print_info "(You may use --gnu-tools <dirname> to use your own gnu-tools)"
 
@@ -102,7 +106,7 @@ if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) || [ $ONLY_PART = "gnu-t
 fi
 
  # U-Boot
-if [ $BUILD_UBOOT = "true" ] || [ $ONLY_PART = "uboot" ]; then
+if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot" ]); then
     cd $ROOT_DIR
     get_project u-boot-xlinx $UBOOT_GIT
     print_info "Configuring uboot."
@@ -112,7 +116,7 @@ if [ $BUILD_UBOOT = "true" ] || [ $ONLY_PART = "uboot" ]; then
 fi
 
 # Linux
-if [ $BUILD_LINUX = "true" ] || [ $ONLY_PART = "linux" ]; then
+if [ $BUILD_LINUX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "linux" ]); then
     cd $ROOT_DIR
     get_project linux-xlnx $LINUX_GIT
     print_info "Configuring the Linux Kernel"
@@ -128,7 +132,7 @@ fi
 
 
 # Filsystem/Busybox
-if [ $BUILD_BUSYBOX = "true" ] || [ $ONLY_PART = "busybox" ]; then
+if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "busybox" ]); then
     cd $ROOT_DIR
     if [ ! -d $FILESYSTEM_ROOT ]; then
 	mkdir $FILESYSTEM_ROOT
@@ -217,7 +221,7 @@ else
 fi
 
 # Dropbear
-if [ $BUILD_DROPBEAR = "true" ] || [ $ONLY_PART = "dropbear" ]; then
+if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dropbear" ]); then
     cd $ROOT_DIR
     if [ ! -d $ROOT_DIR/dropbear/ ]; then
 	mkdir $ROOT_DIR/dropbear
@@ -240,7 +244,7 @@ else
 fi
 
 # Build ramdisk image
-if [ $BUILD_RAMDISK = "true" ] || [ $ONLY_PART = "ramdisk" ]; then
+if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
     cd $RESOURCES_DIR
     # Build ramdisk image
     dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
