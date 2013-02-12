@@ -30,6 +30,7 @@ UBOOT_GIT="git://git.xilinx.com/u-boot-xlnx.git"
 
 # Zip archive
 GNU_TOOLS_FTP="ftp://astaroth/Code/zynq_gnu_tools.zip"
+SDK_SCRIPTS_FTP="ftp://astaroth/Code/xilinx_scripts/"
 
 # Dropbear download info
 DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
@@ -42,6 +43,7 @@ BUILD_BUSYBOX="true"
 BUILD_UBOOT="true"
 BUILD_RAMDISK="true"
 GET_GNU_TOOLS="true"
+GET_SDK_SCRIPTS="true"
 ONLY_PART="all"
 
 # Device trees
@@ -59,6 +61,7 @@ for i in $@; do
 	"--no-ramdisk") BUILD_RAMDISK="false";;
 	"--no-u-boot") BUILD_UBOOT="false";;
 	"--no-gnu-tools") GET_GNU_TOOLS="false";;
+	"--no-sdk-scripts") GET_SDK_SCRIPTS="false";;
 	"--gnu-tools")
 	    shift
 	    GNU_TOOLS=`realpath $1`
@@ -70,11 +73,7 @@ for i in $@; do
 	"--help")
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
-	*)
-	    echo "Error: Unrecognized command."
-	    echo "$HELP_MESSAGE"
-	    exit 0
-	    ;;
+
     esac
 done
 
@@ -112,25 +111,34 @@ fi
 
  # U-Boot
 if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot" ]); then
-    cd $ROOT_DIR
-    get_project u-boot-xlinx $UBOOT_GIT
-    print_info "Configuring uboot."
-    make zynq_zc70x_config
-    print_info "Building uboot."
-    make
-fi
+    if [ ! -e $RESOURCES_DIR/u-boot.elf ]; then
+	cd $ROOT_DIR
+	get_project u-boot-xlnx $UBOOT_GIT
+	print_info "Configuring uboot."
+	make zynq_zc70x_config || exit 0
+	print_info "Building uboot."
+	make || exit 0
 
+	cp u-boot $RESOURCES_DIR/u-boot.elf
+    else
+	print_info "Uboot elf exists. Remove $RESOURCES_DIR/u-boot.elf to rebuild."
+    fi
+fi
 # Linux
 if [ $BUILD_LINUX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "linux" ]); then
-    cd $ROOT_DIR
-    get_project linux-xlnx $LINUX_GIT
-    print_info "Configuring the Linux Kernel"
-    make ARCH=arm xilinx_zynq_defconfig
-    print_info "Building the linux kernel."
-    make ARCH=arm uImage
-    print_info "Building device tree"
-    scripts/dtc/dtc -I dts -O dtb -o $DTS_TREE $DTD_TREE
-    cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
+    if [ ! -e $RESOURCES_DIR/uImage ]; then
+	cd $ROOT_DIR
+	get_project linux-xlnx $LINUX_GIT
+	print_info "Configuring the Linux Kernel"
+	make ARCH=arm xilinx_zynq_defconfig || exit 0
+	print_info "Building the linux kernel."
+	make ARCH=arm uImage || exit 0
+	print_info "Building device tree"
+	scripts/dtc/dtc -I dts -O dtb -o  $DTD_TREE $DTS_TREE
+	cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
+    else
+	print_info "Linux uImage exists. Remove $RESOURCES_DIR/uImage to rebuild."
+    fi
 else
     print_info "Skipping linux compilation."
 fi
@@ -146,8 +154,8 @@ if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "bus
     get_project busybox $BUSYBOX_GIT
 
     print_info "Building filesystem"
-    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig
-    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig || exit 0
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install || exit 0
 
     cd $FILESYSTEM_ROOT
     cp $GNU_TOOLS/libc/lib/* lib -r
@@ -239,8 +247,8 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
 
     print_info "Building dropbear"
     cd $ROOT_DIR/dropbear/*/
-    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
-    make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip
+    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
+    make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || exit 0
     sudo make install;		# Thre are some `chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
@@ -265,7 +273,18 @@ if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ram
     gzip -9 ramdisk.img
 
     # U-Boot ready image
-    $ROOT_DIR/u-boot-xlinx/mkimage –A arm –T ramdisk –C gzip –d ramdisk.img.gz uramdisk.img.gz
+    $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm -T ramdisk -C gzip -d ramdisk.img.gz uramdisk.img.gz
+#   $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm –T ramdisk –C gzip –d $RESOURCES_DIR/uramdisk.img.gz $RESOURCES_DIR/ramdisk.img.gz # this was copy-pasted from the wiki. It doesn't work due to the dashes.
 else
     print_info "Skipping ramdisk creation."
 fi
+
+# SDK scripts
+if [ $GET_SDK_SCRIPTS = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "sdk-scripts" ]); then
+    print_info "Pulling sdk scripts from $SDK_SCRIPTS_FTP"
+    cd $RESOURCES_DIR
+    [ ! -f ps7_init.tcl ] && wget $SDK_SCRIPTS_FTP/ps7_init.tcl
+    [ ! -f stub.tcl ] && wget $SDK_SCRIPTS_FTP/stub.tcl
+fi
+
+print_info "Great success."
