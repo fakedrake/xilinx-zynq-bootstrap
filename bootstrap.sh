@@ -113,12 +113,11 @@ fi
 if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot" ]); then
     if [ ! -e $RESOURCES_DIR/u-boot.elf ]; then
 	cd $ROOT_DIR
-	PATH=$PATH:$GNU_TOOLS_BIN
 	get_project u-boot-xlnx $UBOOT_GIT
 	print_info "Configuring uboot."
-	make zynq_zc70x_config CC="${GNU_TOOLS_PREFIX}gcc"|| exit 0
+	make zynq_zc70x_config --host="${GNU_TOOLS_PREFIX}"|| exit 0
 	print_info "Building uboot."
-	make CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
+	make || exit 0
 
 	cp u-boot $RESOURCES_DIR/u-boot.elf
 	PATH=$PATH:$ROOT_DIR/u-boot-xlnx/tools
