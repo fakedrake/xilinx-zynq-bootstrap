@@ -104,7 +104,7 @@ if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all"
     print_info "Downloading Xilinx configured GNU tools: $GNU_TOOLS_FTP"
     print_info "(You may use --gnu-tools <dirname> to use your own gnu-tools)"
 
-    wget $GNU_TOOLS_FTP
+    wget $GNU_TOOLS_FTP || (print_info "Failed to pull from ftp."; exit 0)
     print_info "Extracting GNU tools."
     unzip `basename $GNU_TOOLS_FTP`
 fi
@@ -289,8 +289,8 @@ fi
 if [ $GET_SDK_SCRIPTS = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "sdk-scripts" ]); then
     print_info "Pulling sdk scripts from $SDK_SCRIPTS_FTP"
     cd $RESOURCES_DIR
-    [ ! -f ps7_init.tcl ] && wget $SDK_SCRIPTS_FTP/ps7_init.tcl
-    [ ! -f stub.tcl ] && wget $SDK_SCRIPTS_FTP/stub.tcl
+    [ ! -f ps7_init.tcl ] && (wget $SDK_SCRIPTS_FTP/ps7_init.tcl || (print_info "Failed to pull $SDK_SCRIPTS_FTP/ps7_init.tcl"; exit 0))
+    [ ! -f stub.tcl ] && (wget $SDK_SCRIPTS_FTP/stub.tcl || (print_info "Failed to pull $SDK_SCRIPTS_FTP/ps7_init.tcl"; exit 0))
 fi
 
 print_info "Great success."
