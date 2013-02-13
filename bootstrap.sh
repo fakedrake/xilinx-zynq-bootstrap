@@ -29,8 +29,8 @@ BUSYBOX_GIT="git://git.busybox.net/busybox"
 UBOOT_GIT="git://git.xilinx.com/u-boot-xlnx.git"
 
 # Zip archive
-GNU_TOOLS_FTP="ftp://astaroth/Code/zynq_gnu_tools.zip"
-SDK_SCRIPTS_FTP="ftp://astaroth/Code/xilinx_scripts/"
+GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.zip"
+SDK_SCRIPTS_FTP="ftp://83.212.100.45/Code/xilinx_scripts/"
 
 # Dropbear download info
 DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
