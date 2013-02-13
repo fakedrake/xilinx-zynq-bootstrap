@@ -120,16 +120,18 @@ if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot
 	make || exit 0
 
 	cp u-boot $RESOURCES_DIR/u-boot.elf
+	PATH=$PATH:$ROOT_DIR/u-boot-xlnx/tools
     else
 	print_info "Uboot elf exists. Remove $RESOURCES_DIR/u-boot.elf to rebuild."
     fi
 fi
+
 # Linux
 if [ $BUILD_LINUX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "linux" ]); then
     if [ ! -e $RESOURCES_DIR/uImage ]; then
 	cd $ROOT_DIR
 	get_project linux-xlnx $LINUX_GIT
-	print_info "Configuring the Linux Kernel"
+	print_info "Configuring the Linux Kernel, \$PATH=$PATH"
 	make ARCH=arm xilinx_zynq_defconfig || exit 0
 	print_info "Building the linux kernel."
 	make ARCH=arm uImage || exit 0
@@ -158,7 +160,8 @@ if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "bus
     make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install || exit 0
 
     cd $FILESYSTEM_ROOT
-    cp $GNU_TOOLS/libc/lib/* lib -r
+    mkdir lib
+    cp $GNU_TOOLS_UTILS/libc/lib/* lib -r
 
     # Strip libs of symbols
     $GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-strip lib/*
@@ -177,8 +180,7 @@ none        /proc       proc    defaults        0 0
 none        /sys        sysfs   defaults        0 0
 none        /tmp        tmpfs   defaults        0 0" > etc/fstab
 
-    echo "::sysinit:/etc/init.d/rcS
-
+    echo "
 # /bin/ash
 #
 # Start an askfirst shell on the serial ports
@@ -228,7 +230,9 @@ dropbear
 echo "rcS Complete"' > etc/init.d/rcS
 
     chmod 755 etc/init.d/rcS
-    sudo chown root:root etc/init.d/rcS # I dont think this is necessary
+
+    print_info "Do not fear, we are about to `sudo chown root:root etc/init.d/rcS'..."
+    sudo chown root:root etc/init.d/rcS
 else
     print_info "Skipping busybox compilation and filesystem creation."
 fi
@@ -249,6 +253,8 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
     cd $ROOT_DIR/dropbear/*/
     ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || exit 0
+
+    print_info "We are about to `sudo make install', the reason we need chown is that we will chgrp 0 to some files."
     sudo make install;		# Thre are some `chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
