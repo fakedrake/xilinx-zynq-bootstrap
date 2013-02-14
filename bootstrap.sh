@@ -115,9 +115,10 @@ if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot
 	cd $ROOT_DIR
 	get_project u-boot-xlnx $UBOOT_GIT
 	print_info "Configuring uboot."
-	make zynq_zc70x_config --host="${GNU_TOOLS_PREFIX}"|| exit 0
+	make zynq_zc70x_config CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
 	print_info "Building uboot."
-	make || exit 0
+	# This is quite ugly but I am open to suggestions.
+	make  OBJCOPY="${GNU_TOOLS_PREFIX}objcopy" LD="${GNU_TOOLS_PREFIX}ld" AR="${GNU_TOOLS_PREFIX}ar" CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
 
 	cp u-boot $RESOURCES_DIR/u-boot.elf
 	PATH=$PATH:$ROOT_DIR/u-boot-xlnx/tools
