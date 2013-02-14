@@ -81,7 +81,9 @@ done
 GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
 GNU_TOOLS_BIN=$GNU_TOOLS/bin
 GNU_TOOLS_PREFIX=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-
-CROSS_COMPILE=$GNU_TOOLS_PREFIX
+export CROSS_COMPILE=$GNU_TOOLS_PREFIX
+export PATH=$PATH:$GNU_TOOLS_BIN
+
 
 function print_info {
     echo "[INFO] $1"
@@ -121,10 +123,10 @@ if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot
 	make  OBJCOPY="${GNU_TOOLS_PREFIX}objcopy" LD="${GNU_TOOLS_PREFIX}ld" AR="${GNU_TOOLS_PREFIX}ar" CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
 
 	cp u-boot $RESOURCES_DIR/u-boot.elf
-	PATH=$PATH:$ROOT_DIR/u-boot-xlnx/tools
     else
 	print_info "Uboot elf exists. Remove $RESOURCES_DIR/u-boot.elf to rebuild."
     fi
+    PATH=$PATH:$ROOT_DIR/u-boot-xlnx/tools
 fi
 
 # Linux
