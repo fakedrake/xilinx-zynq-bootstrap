@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SERIAL=/dev/ttyUSB0
+
 if [ $1 = "stop" ]; then
     echo -e "connect arm hw\nstop" | xmd
     exit 1
@@ -24,9 +26,9 @@ dow -data uramdisk.img.gz   0x20000000
 dow -data zynq-zc702.dtd    0x2A000000
 dow u-boot.elf
 con
-" | xmd && sleep 1 && echo -e "\n" > /dev/ttyUSB0 && sleep 2 && echo "bootm 0x30000000 0x20000000 0x2A000000" > /dev/ttyUSB0
+" | xmd && sleep 1 && echo -e "\n" > $SERIAL && sleep 2 && echo "bootm 0x30000000 0x20000000 0x2A000000" > $SERIAL
 
 
-if [ $1 = "minicom" ]; then
+if [ "$1" = "minicom" ]; then
     echo "Running sudo minicom -D /dev/ttyUSB0 -b 115200"
 fi
