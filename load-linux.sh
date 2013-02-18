@@ -7,6 +7,7 @@ fi
 
 if [[ -d "resources/" ]]; then
     cd resources/
+    echo "In directory: `pwd`"
 else
     echo "No `pwd`/resources/ dir found."
     exit 0
