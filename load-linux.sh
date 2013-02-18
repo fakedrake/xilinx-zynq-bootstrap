@@ -5,7 +5,7 @@ if [ $1 = "stop" ]; then
     exit 1
 fi
 
-if [[ -d "resources/" ]]; then
+if [[ -d resources/ ]]; then
     cd resources/
     echo "In directory: `pwd`"
 else
