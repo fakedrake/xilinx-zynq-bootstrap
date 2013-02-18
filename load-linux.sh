@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ $1 == "stop" ]; then
+    echo "stop" > /dev/ttyUSB0
+    exit 1
+fi
+
 if [ -d "resources/" ]; then
     cd resources/
 else
