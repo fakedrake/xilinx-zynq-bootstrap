@@ -24,7 +24,7 @@ dow -data uramdisk.img.gz   0x20000000
 dow -data zynq-zc702.dtd    0x2A000000
 dow u-boot.elf
 con
-" | xmd && sleep 1 && echo -e "\n" > /dev/ttyUSB0 && sleep 2 && echo "bootm 0x3000000 0x2000000 0x2A00000" > /dev/ttyUSB0
+" | xmd && sleep 1 && echo -e "\n" > /dev/ttyUSB0 && sleep 2 && echo "bootm 0x30000000 0x20000000 0x2A000000" > /dev/ttyUSB0
 
 
 if [ $1 = "minicom" ]; then
