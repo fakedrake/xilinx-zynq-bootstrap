@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $1 = "stop" ]; then
-    echo "stop" > /dev/ttyUSB0
+    echo -e "connect arm hw\nstop" | xmd
     exit 1
 fi
 
