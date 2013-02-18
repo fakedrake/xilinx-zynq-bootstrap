@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $1 == "stop" ]; then
+if [ $1 = "stop" ]; then
     echo "stop" > /dev/ttyUSB0
     exit 1
 fi
@@ -25,4 +25,7 @@ dow u-boot.elf
 con
 " | xmd && echo -e "\n" > /dev/ttyUSB0 && echo "bootm 0x3000000 0x2000000 0x2A00000" > /dev/ttyUSB0
 
-echo "Running sudo minicom -D /dev/ttyUSB0 -b 115200"
+
+if [ $1 = "minicom" ]; then
+    echo "Running sudo minicom -D /dev/ttyUSB0 -b 115200"
+fi
