@@ -269,7 +269,7 @@ fi
 if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
     cd $RESOURCES_DIR
     # Build ramdisk image
-    dd if=/dev/zero of=ramdisk.img bs=1024 count=8192
+    dd if=/dev/zero of=ramdisk.img bs=1024 count=8200
     mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
     tune2fs ramdisk.img -i 0
     chmod 777 ramdisk.img
