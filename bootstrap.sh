@@ -234,7 +234,7 @@ echo "rcS Complete"' > etc/init.d/rcS
 
     chmod 755 etc/init.d/rcS
 
-    print_info "Do not fear, we are about to `sudo chown root:root etc/init.d/rcS'..."
+    print_info "Do not fear, we are about to 'sudo chown root:root etc/init.d/rcS'..."
     sudo chown root:root etc/init.d/rcS
 else
     print_info "Skipping busybox compilation and filesystem creation."
@@ -257,8 +257,8 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
     ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || exit 0
 
-    print_info "We are about to `sudo make install', the reason we need chown is that we will chgrp 0 to some files."
-    sudo make install;		# Thre are some `chgrp 0' here so we need sudo
+    print_info "We are about to 'sudo make install', the reason we need chown is that we will chgrp 0 to some files."
+    sudo make install;		# Thre are some 'chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 else
