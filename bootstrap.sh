@@ -275,8 +275,8 @@ fi
 if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
     cd $RESOURCES_DIR
     # Build ramdisk image
-    print_info "Ramdisk blocks: $((`ll ramdisk.img | awk '{print $5}'`/1024))"
-    dd if=/dev/zero of=ramdisk.img bs=1024 count= $((`ll ramdisk.img | awk '{print $5}'`/1024))
+    print_info "Ramdisk blocks: $((`du -b ../fs| grep 'fs$'|awk '{print $1}'`/1024)) (we use 8193)"
+    dd if=/dev/zero of=ramdisk.img bs=1024 count=8193
     mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
     tune2fs ramdisk.img -i 0
     chmod 777 ramdisk.img
