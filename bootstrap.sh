@@ -80,6 +80,7 @@ done
 # Dependent vars
 GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
 GNU_TOOLS_BIN=$GNU_TOOLS/bin
+GNU_TOOLS_HOST=arm-xilinx-linux-gnueabi
 GNU_TOOLS_PREFIX=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-
 export CROSS_COMPILE=$GNU_TOOLS_PREFIX
 export PATH=$PATH:$GNU_TOOLS_BIN
@@ -259,7 +260,7 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
 
     print_info "Building dropbear"
     cd $ROOT_DIR/dropbear/*/
-    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os" || fail "dropbear configuration"
+    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_HOST --disable-zlib  LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os" || fail "dropbear configuration"
     make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || fail "dropbear building"
 
     print_info "We are about to 'sudo make install', the reason we need chown is that we will chgrp 0 to some files."
@@ -288,7 +289,7 @@ if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ram
     gzip -9 ramdisk.img
 
     # U-Boot ready image
-    $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm -T ramdisk -C gzip -d ramdisk.img.gz uramdisk.img.gz
+    $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm -T ramdisk -C gzip -d $RESOURCES_DIR/ramdisk.img.gz $RESOURCES_DIR/uramdisk.img.gz
 #   $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm –T ramdisk –C gzip –d $RESOURCES_DIR/uramdisk.img.gz $RESOURCES_DIR/ramdisk.img.gz # this was copy-pasted from the wiki. It doesn't work due to the dashes.
 else
     print_info "Skipping ramdisk creation."
