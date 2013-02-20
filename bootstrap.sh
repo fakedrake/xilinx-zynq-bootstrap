@@ -101,6 +101,11 @@ function get_project {
     fi
 }
 
+function fail {
+    echo "[ERROR] $1 failed!"
+    exit 0
+}
+
 # Gnu toolchain
 if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "gnu-tools" ]); then
     print_info "Downloading Xilinx configured GNU tools: $GNU_TOOLS_FTP"
@@ -117,10 +122,10 @@ if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot
 	cd $ROOT_DIR
 	get_project u-boot-xlnx $UBOOT_GIT
 	print_info "Configuring uboot."
-	make zynq_zc70x_config CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
+	make zynq_zc70x_config CC="${GNU_TOOLS_PREFIX}gcc" || fail "u-boot configuration"
 	print_info "Building uboot."
 	# This is quite ugly but I am open to suggestions.
-	make  OBJCOPY="${GNU_TOOLS_PREFIX}objcopy" LD="${GNU_TOOLS_PREFIX}ld" AR="${GNU_TOOLS_PREFIX}ar" CC="${GNU_TOOLS_PREFIX}gcc" || exit 0
+	make  OBJCOPY="${GNU_TOOLS_PREFIX}objcopy" LD="${GNU_TOOLS_PREFIX}ld" AR="${GNU_TOOLS_PREFIX}ar" CC="${GNU_TOOLS_PREFIX}gcc" || fail "u-boot building"
 
 	cp u-boot $RESOURCES_DIR/u-boot.elf
     else
@@ -135,9 +140,9 @@ if [ $BUILD_LINUX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "linux
 	cd $ROOT_DIR
 	get_project linux-xlnx $LINUX_GIT
 	print_info "Configuring the Linux Kernel, \$PATH=$PATH"
-	make ARCH=arm xilinx_zynq_defconfig || exit 0
+	make ARCH=arm xilinx_zynq_defconfig || fail "linux configuration"
 	print_info "Building the linux kernel."
-	make ARCH=arm uImage || exit 0
+	make ARCH=arm uImage || fail "linux building"
 	print_info "Building device tree"
 	scripts/dtc/dtc -I dts -O dtb -o  $DTD_TREE $DTS_TREE
 	cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
@@ -159,8 +164,8 @@ if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "bus
     get_project busybox $BUSYBOX_GIT
 
     print_info "Building filesystem"
-    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig || exit 0
-    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install || exit 0
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" defconfig || fail "busybox configuration"
+    make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install || fail "busybox building"
 
     cd $FILESYSTEM_ROOT
     mkdir lib
@@ -254,11 +259,11 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
 
     print_info "Building dropbear"
     cd $ROOT_DIR/dropbear/*/
-    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os"
-    make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || exit 0
+    ./configure --prefix=$FILESYSTEM_ROOT --host=$GNU_TOOLS_PREFIX --disable-zlib CC=$GNU_TOOLS_BIN/arm-xilinx-linux-gnueabi-gcc LDFLAGS="-Wl,--gc-sections" CFLAGS="-ffunction-sections -fdata-sections -Os" || fail "dropbear configuration"
+    make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1 strip || fail "dropbear building"
 
     print_info "We are about to 'sudo make install', the reason we need chown is that we will chgrp 0 to some files."
-    sudo make install;		# Thre are some 'chgrp 0' here so we need sudo
+    sudo make install || fail "dropbear installation"		# Thre are some 'chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 else
@@ -269,8 +274,8 @@ fi
 if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
     cd $RESOURCES_DIR
     # Build ramdisk image
-    # Use: $((`ll ramdisk.img | awk '{print $5}'`/1024)) to get the correct count
-    dd if=/dev/zero of=ramdisk.img bs=1024 count=8193
+    print_info "Ramdisk blocks: $((`ll ramdisk.img | awk '{print $5}'`/1024))"
+    dd if=/dev/zero of=ramdisk.img bs=1024 count= $((`ll ramdisk.img | awk '{print $5}'`/1024))
     mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
     tune2fs ramdisk.img -i 0
     chmod 777 ramdisk.img
