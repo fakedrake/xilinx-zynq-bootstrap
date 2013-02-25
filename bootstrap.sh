@@ -36,6 +36,9 @@ SDK_SCRIPTS_FTP="ftp://83.212.100.45/Code/xilinx_scripts/"
 DROPBEAR_TAR_URL="http://matt.ucc.asn.au/dropbear/releases/dropbear-0.53.1.tar.gz"
 DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
 
+DSS_KEY_FTP="ftp://83.212.100.45/Code/xilinx_scripts/dropbear_dss_host_key"
+RSA_KEY_FTP="ftp://83.212.100.45/Code/xilinx_scripts/dropbear_rsa_host_key"
+
 # What not to build
 BUILD_LINUX="true"
 BUILD_DROPBEAR="true"
@@ -236,6 +239,10 @@ tcpsvd 0:21 ftpd ftpd -w /&
 echo "++ Starting dropbear (ssh) daemon"
 dropbear
 
+echo "Creating RSA keys"
+[ ! -f /etc/dropbear/dropbear_dss_host_key ] && dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key
+[ ! -f /etc/dropbear/dropbear_rsa_host_key ] && dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+
 echo "rcS Complete"' > etc/init.d/rcS
 
     chmod 755 etc/init.d/rcS
@@ -267,6 +274,10 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
     sudo make install || fail "dropbear installation"		# Thre are some 'chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
+
+    print_info "Downloading keys"
+    wget $DSS_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/ || print_info "Downloading dss key from $DSS_KEY_FTP failed but no biggie, it will be generated."
+    wget $RSA_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/ || print_info "Downloading rsa key from $RSA_KEY_FTP failed but no biggie, it will be generated."
 else
     print_info "Skipping dropbear compilation"
 fi
