@@ -204,7 +204,7 @@ ttyPS0::respawn:-/bin/ash
 
 ::shutdown:/bin/umount -a -r" > etc/inittab
 
-    echo "root:$1$qC.CEbjC$SVJyqm.IG.gkElhaeM.FD0:0:0:root:/root:/bin/sh" > etc/passwd
+    echo 'root:$1$qC.CEbjC$SVJyqm.IG.gkElhaeM.FD0:0:0:root:/root:/bin/sh' > etc/passwd
 
     echo '#!/bin/sh
 
