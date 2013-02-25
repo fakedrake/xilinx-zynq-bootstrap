@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2013 by Chris "fakedrake" Perivolaropoulos
-# <darksaga2006@gmail.co,>
+# <darksaga2006@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 HELP_MESSAGE=`cat README.txt`
 
-ROOT_DIR=`pwd`
+ROOT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 RESOURCES_DIR=$ROOT_DIR/resources
 FILESYSTEM_ROOT=$ROOT_DIR/fs/
 
@@ -45,6 +45,8 @@ BUILD_DROPBEAR="true"
 BUILD_BUSYBOX="true"
 BUILD_UBOOT="true"
 BUILD_RAMDISK="true"
+BUILD_SSH="true"
+SSH_COMPILE="true"
 GET_GNU_TOOLS="true"
 GET_SDK_SCRIPTS="true"
 ONLY_PART="all"
@@ -55,9 +57,13 @@ DTB_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtb'`
 
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
+if command -v arm-xilinx-linux-gnueabi-gcc; then
+    GNU_TOOLS=`dirname $(which arm-xilinx-linux-gnueabi-gcc)`/../
+    GET_GNU_TOOLS="false"
+fi
 
-for i in $@; do
-    case $i in
+while [[ $# -gt 0 ]]; do
+    case $1 in
 	"--no-linux") BUILD_LINUX="false";;
 	"--no-dropbear") BUILD_DROPBEAR="false";;
 	"--no-busybox") BUILD_BUSYBOX="false";;
@@ -65,6 +71,8 @@ for i in $@; do
 	"--no-u-boot") BUILD_UBOOT="false";;
 	"--no-gnu-tools") GET_GNU_TOOLS="false";;
 	"--no-sdk-scripts") GET_SDK_SCRIPTS="false";;
+	"--no-ssh") BUILD_SSH="false";;
+	"--no-ssh-compile") SSH_COMPILE="false";;
 	"--gnu-tools")
 	    shift
 	    GNU_TOOLS=`realpath $1`
@@ -78,7 +86,10 @@ for i in $@; do
 	    exit 0;;
 
     esac
+    shift
 done
+
+print_info "Using gnu tools: $GNU_TOOLS"
 
 # Dependent vars
 GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
@@ -89,8 +100,10 @@ export CROSS_COMPILE=$GNU_TOOLS_PREFIX
 export PATH=$PATH:$GNU_TOOLS_BIN
 
 
+LOG_FILE=$ROOT_DIR/bootstrap.log
+echo "= Script Started =" > $LOG_FILE
 function print_info {
-    echo "[INFO] $1"
+    echo "[INFO] $1" | tee -a $LOG_FILE
 }
 
 function get_project {
@@ -106,7 +119,7 @@ function get_project {
 }
 
 function fail {
-    echo "[ERROR] $1 failed!"
+    echo "[ERROR] $1 failed!" | tee -a $LOG_FILE
     exit 0
 }
 
@@ -121,12 +134,12 @@ if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all"
 fi
 
  # U-Boot
-if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "uboot" ]); then
+if [ $BUILD_UBOOT = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "u-boot" ]); then
     if [ ! -e $RESOURCES_DIR/u-boot.elf ]; then
 	cd $ROOT_DIR
 	get_project u-boot-xlnx $UBOOT_GIT
 	print_info "Configuring uboot."
-	make zynq_zc70x_config CC="${GNU_TOOLS_PREFIX}gcc" || fail "u-boot configuration"
+	make zynq_zc70x_config || fail "u-boot configuration" # I might interest you in  CC="${GNU_TOOLS_PREFIX}gcc"
 	print_info "Building uboot."
 	# This is quite ugly but I am open to suggestions.
 	make  OBJCOPY="${GNU_TOOLS_PREFIX}objcopy" LD="${GNU_TOOLS_PREFIX}ld" AR="${GNU_TOOLS_PREFIX}ar" CC="${GNU_TOOLS_PREFIX}gcc" || fail "u-boot building"
@@ -172,7 +185,7 @@ if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "bus
     make ARCH=arm CROSS_COMPILE=$GNU_TOOLS_PREFIX CONFIG_PREFIX="$FILESYSTEM_ROOT" install || fail "busybox building"
 
     cd $FILESYSTEM_ROOT
-    mkdir lib
+    [ -d lib ] || mkdir lib
     cp $GNU_TOOLS_UTILS/libc/lib/* lib -r
 
     # Strip libs of symbols
@@ -183,17 +196,29 @@ if [ $BUILD_BUSYBOX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "bus
     cp $GNU_TOOLS_UTILS/libc/usr/bin/* usr/bin/ -r
 
     # Create fs structure
-    mkdir dev etc etc/dropbear etc/init.d mnt opt proc root sys tmp var var/log var/www
+    [ -d dev ] || mkdir dev
+    [ -d etc ] || mkdir etc
+    [ -d etc/dropbear ] || mkdir etc/dropbear
+    [ -d etc/init.d ] || mkdir etc/init.d
+    [ -d mnt ] || mkdir mnt
+    [ -d opt ] || mkdir opt
+    [ -d proc ] || mkdir proc
+    [ -d root ] || mkdir root
+    [ -d sys ] || mkdir sys
+    [ -d tmp ] || mkdir tmp
+    [ -d var ] || mkdir var
+    [ -d var/log ] || mkdir var/log
+    [ -d var/www ] || mkdir var/www
 
     # Specific files
+    [ -f etc/init.d/rcS ] && sudo rm etc/init.d/rcS
     echo "LABEL=/     /           tmpfs   defaults        0 0
 none        /dev/pts    devpts  gid=5,mode=620  0 0
 none        /proc       proc    defaults        0 0
 none        /sys        sysfs   defaults        0 0
 none        /tmp        tmpfs   defaults        0 0" > etc/fstab
 
-    echo "
-# /bin/ash
+    echo "# /bin/ash
 #
 # Start an askfirst shell on the serial ports
 
@@ -209,7 +234,7 @@ ttyPS0::respawn:-/bin/ash
 
     echo 'root:$1$qC.CEbjC$SVJyqm.IG.gkElhaeM.FD0:0:0:root:/root:/bin/sh' > etc/passwd
 
-    echo '#!/bin/sh
+    echo '#!/bin/ash
 
 echo "Starting rcS..."
 
@@ -239,13 +264,9 @@ tcpsvd 0:21 ftpd ftpd -w /&
 echo "++ Starting dropbear (ssh) daemon"
 dropbear
 
-echo "Creating RSA keys"
-[ ! -f /etc/dropbear/dropbear_dss_host_key ] && dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key
-[ ! -f /etc/dropbear/dropbear_rsa_host_key ] && dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
-
 echo "rcS Complete"' > etc/init.d/rcS
 
-    chmod 755 etc/init.d/rcS
+    sudo chmod 755 etc/init.d/rcS
 
     print_info "Do not fear, we are about to 'sudo chown root:root etc/init.d/rcS'..."
     sudo chown root:root etc/init.d/rcS
@@ -282,26 +303,89 @@ else
     print_info "Skipping dropbear compilation"
 fi
 
+# Build openSSH/SFTP
+if  [ $BUILD_SSH = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ssh" ]); then
+    if [ ! -d $SSH_UNIVERSE_DIR ]; then
+	mkdir $SSH_UNIVERSE_DIR
+    fi
+
+    cd $SSH_UNIVERSE_DIR
+    SSL_DIR=$SSH_UNIVERSE_DIR/openssl-0.9.8d
+    ZLIB_DIR=$SSH_UNIVERSE_DIR/zlib-1.2.7
+    SSH_DIR=$SSH_UNIVERSE_DIR/openssh-6.1p1
+
+    [ ! -f openssh.tar.gz ] && wget http://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.1p1.tar.gz -O openssh.tar.gz
+    [ ! -f zlib.tar.gz ] && wget http://zlib.net/zlib-1.2.7.tar.gz -O zlib.tar.gz
+    [ ! -f openssl.tar.gz ] && wget http://www.openssl.org/source/openssl-0.9.8d.tar.gz -O openssl.tar.gz
+
+    [ ! -d $SSH_DIR ] && tar xvzf openssh.tar.gz
+    [ ! -d $SSL_DIR ] && tar xvzf openssl.tar.gz
+    [ ! -d $ZLIB_DIR ] && tar xvzf zlib.tar.gz
+
+    if [ "$SSH_COMPILE" = "true" ]; then
+    	# zlib
+	print_info "Building zlib"
+	cd $ZLIB_DIR
+	CC="$CROSS_COMPILE"gcc LDSHARED="$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$SSH_INSTALL_ROOT || fail "zlib configuration"
+	make || fail "zlib build"
+	make install || fail "zlib install"
+
+    	# SSL
+	print_info "Building SSL"
+	cd $SSL_DIR
+	./Configure dist --prefix=$SSH_INSTALL_ROOT || fail "ssl configuration"
+	make CC="$CROSS_COMPILE"gcc AR="${CROSS_COMPILE}ar rcs" RANLIB="$CROSS_COMPILE"ranlib || fail "ssl build" # See wikipedia page or ar for the "unorthodox use"
+	make install || fail "ssl installation"
+
+    	# SSH
+	print_info "Building SSH"
+	cd $SSH_DIR
+    	# This may need to remove --host and fix ar a bit...
+	./configure --prefix=$SSH_INSTALL_ROOT --host=arm-xilinx-linux-gnueabi --with-privsep-path=$FILESYSTEM_ROOT/var/empty --with-libs --with-zlib=$SSH_INSTALL_ROOT --with-ssl-dir=$SSH_INSTALL_ROOT --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=${CROSS_COMPILE}strip" CC="${CROSS_COMPILE}gcc" AR="${CROSS_COMPILE}ar" || fail "ssh configuration"
+	make || fail "ssh build"
+	make install || fail "ssh install"
+    fi
+
+    [ -d $SSH_INSTALL_ROOT/bin ] && [ -d $SSH_INSTALL_ROOT/libexec ] || fail "checking ssh install dirs (ssh never built)"
+
+    # Move to filesystem
+    [ ! -d  $FILESYSTEM_ROOT/libexec/ ] && mkdir $FILESYSTEM_ROOT/libexec/
+    cp $SSH_INSTALL_ROOT/bin/sftp $FILESYSTEM_ROOT/bin/sftp || fail "copying sftp executable"
+    cp $SSH_INSTALL_ROOT/libexec/sftp-server $FILESYSTEM_ROOT/libexec/sftp-server || fail "copying sftp-server executable"
+    cp $SSH_INSTALL_ROOT/lib/libz.so.1 $FILESYSTEM_ROOT/lib/libz.so.1 || fail "copying libz"
+fi
+
 # Build ramdisk image
 if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
     cd $RESOURCES_DIR
+
+    # Unmount if it is mounted
+    if mount -l | grep $RESOURCES_DIR/ramdisk; then
+	print_info "Unmounting and removing $RESOURCES_DIR/ramdisk"
+	sudo umount $RESOURCES_DIR/ramdisk
+	rmdir $RESOURCES_DIR/ramdisk
+    fi
+
     # Build ramdisk image
-    print_info "Ramdisk blocks: $((`du -b ../fs| grep 'fs$'|awk '{print $1}'`/1024)) (we use 8193)"
-    dd if=/dev/zero of=ramdisk.img bs=1024 count=8193
+    BLOCK_COUNT=$((`du -c ../fs| tail -1 |awk '{print $1}'` + 200)) # 23384
+    print_info "Ramdisk blocks: $((`du  --block-size=1 ../fs| grep 'fs$'|awk '{print $1}'`/1024)) (we use $BLOCK_COUNT)"
+    [ -f ramdisk.img ] && rm ramdisk.img
+    dd if=/dev/zero of=ramdisk.img bs=1024 count=$BLOCK_COUNT
     mke2fs -F ramdisk.img -L "ramdisk" -b 1024 -m 0
     tune2fs ramdisk.img -i 0
     chmod 777 ramdisk.img
 
-    mkdir ramdisk
+    [ -d ramdisk ] || mkdir ramdisk
     sudo mount -o loop ramdisk.img ramdisk/
-    sudo cp -R $FILESYSTEM_ROOT/* ramdisk
+    sudo cp -R $FILESYSTEM_ROOT/* ramdisk ||  fail "Copy filesystem to ramdisk"
     sudo umount ramdisk/
 
-    gzip -9 ramdisk.img
+    [ -f ramdisk.img.gz ] && rm ramdisk.img.gz
+    cat ramdisk.img | gzip -9 > ramdisk.img.gz
 
     # U-Boot ready image
-    $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm -T ramdisk -C gzip -d $RESOURCES_DIR/ramdisk.img.gz $RESOURCES_DIR/uramdisk.img.gz
-#   $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm –T ramdisk –C gzip –d $RESOURCES_DIR/uramdisk.img.gz $RESOURCES_DIR/ramdisk.img.gz # this was copy-pasted from the wiki. It doesn't work due to the dashes.
+    $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm -T ramdisk -C gzip -d $RESOURCES_DIR/ramdisk.img.gz $RESOURCES_DIR/uramdisk.img.gz || fail "Making uramdisk"
+    # $ROOT_DIR/u-boot-xlnx/tools/mkimage -A arm –T ramdisk –C gzip –d $RESOURCES_DIR/uramdisk.img.gz $RESOURCES_DIR/ramdisk.img.gz # this was copy-pasted from the wiki. It doesn't work due to the dashes.
 else
     print_info "Skipping ramdisk creation."
 fi
