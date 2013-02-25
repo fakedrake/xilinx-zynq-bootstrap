@@ -32,7 +32,7 @@ source stub.tcl
 target 64
 dow -data uImage            0x30000000
 dow -data uramdisk.img.gz   0x20000000
-dow -data zynq-zc702.dtd    0x2A000000
+dow -data zynq-zc702.dtb    0x2A000000
 dow u-boot.elf
 con
 " | xmd && sleep 1 && sudo sh -c "echo -e \"\n\" > $SERIAL" && sleep 2 && sudo sh -c "echo \"bootm 0x30000000 0x20000000 0x2A000000\" > $SERIAL"

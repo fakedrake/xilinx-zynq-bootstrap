@@ -48,7 +48,7 @@ ONLY_PART="all"
 
 # Device trees
 DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
-DTD_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtd'`
+DTB_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtb'`
 
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
@@ -145,7 +145,7 @@ if [ $BUILD_LINUX = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "linux
 	print_info "Building the linux kernel."
 	make ARCH=arm uImage || fail "linux building"
 	print_info "Building device tree"
-	scripts/dtc/dtc -I dts -O dtb -o  $DTD_TREE $DTS_TREE
+	scripts/dtc/dtc -I dts -O dtb -o  $DTB_TREE $DTS_TREE
 	cp $ROOT_DIR/linux-xlnx/arch/arm/boot/uImage $RESOURCES_DIR
     else
 	print_info "Linux uImage exists. Remove $RESOURCES_DIR/uImage to rebuild."
