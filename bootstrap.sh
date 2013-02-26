@@ -305,6 +305,8 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
     sudo make install || fail "dropbear installation"		# Thre are some 'chgrp 0' here so we need sudo
 
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
+    ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/ssh
+
 
     print_info "Downloading keys"
     wget $DSS_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/dropbear_dss_host_key || print_info "Downloading dss key from $DSS_KEY_FTP failed but no biggie, it will be generated."
