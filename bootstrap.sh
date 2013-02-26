@@ -39,6 +39,9 @@ DROPBEAR_TAR=`basename $DROPBEAR_TAR_URL`
 DSS_KEY_FTP="ftp://83.212.100.45/Code/xilinx_scripts/dropbear_dss_host_key"
 RSA_KEY_FTP="ftp://83.212.100.45/Code/xilinx_scripts/dropbear_rsa_host_key"
 
+SSH_UNIVERSE_DIR=$ROOT_DIR/ssh/
+SSH_INSTALL_ROOT=$SSH_UNIVERSE_DIR/ssh-install/
+
 # What not to build
 BUILD_LINUX="true"
 BUILD_DROPBEAR="true"
@@ -46,7 +49,8 @@ BUILD_BUSYBOX="true"
 BUILD_UBOOT="true"
 BUILD_RAMDISK="true"
 BUILD_SSH="true"
-SSH_COMPILE="true"
+SSH_COMPILE="false"
+[ -d $SSH_INSTALL_ROOT ] || SSH_COMPILE="true"
 GET_GNU_TOOLS="true"
 GET_SDK_SCRIPTS="true"
 ONLY_PART="all"
@@ -55,6 +59,7 @@ ONLY_PART="all"
 DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
 DTB_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtb'`
 
+RAMDISK_EXTRA_SPACE=1000
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
 if command -v arm-xilinx-linux-gnueabi-gcc; then
@@ -218,7 +223,9 @@ none        /proc       proc    defaults        0 0
 none        /sys        sysfs   defaults        0 0
 none        /tmp        tmpfs   defaults        0 0" > etc/fstab
 
-    echo "# /bin/ash
+    echo "::sysinit:/etc/init.d/rcS
+
+# /bin/ash
 #
 # Start an askfirst shell on the serial ports
 
@@ -234,7 +241,7 @@ ttyPS0::respawn:-/bin/ash
 
     echo 'root:$1$qC.CEbjC$SVJyqm.IG.gkElhaeM.FD0:0:0:root:/root:/bin/sh' > etc/passwd
 
-    echo '#!/bin/ash
+    echo '#!/bin/sh
 
 echo "Starting rcS..."
 
@@ -260,6 +267,9 @@ httpd -h /var/www
 
 echo "++ Starting ftp daemon"
 tcpsvd 0:21 ftpd ftpd -w /&
+
+[ -e /etc/dropbear/dropbear_dss_host_key ] || dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key
+[ -e /etc/dropbear/dropbear_rsa_host_key ] || dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
 
 echo "++ Starting dropbear (ssh) daemon"
 dropbear
@@ -297,8 +307,8 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
     ln -s ../../sbin/dropbear $FILESYSTEM_ROOT/usr/bin/scp
 
     print_info "Downloading keys"
-    wget $DSS_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/ || print_info "Downloading dss key from $DSS_KEY_FTP failed but no biggie, it will be generated."
-    wget $RSA_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/ || print_info "Downloading rsa key from $RSA_KEY_FTP failed but no biggie, it will be generated."
+    wget $DSS_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/dropbear_dss_host_key || print_info "Downloading dss key from $DSS_KEY_FTP failed but no biggie, it will be generated."
+    wget $RSA_KEY_FTP -O $FILESYSTEM_ROOT/etc/dropbear/dropbear_rsa_host_key || print_info "Downloading rsa key from $RSA_KEY_FTP failed but no biggie, it will be generated."
 else
     print_info "Skipping dropbear compilation"
 fi
@@ -367,7 +377,7 @@ if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ram
     fi
 
     # Build ramdisk image
-    BLOCK_COUNT=$((`du -c ../fs| tail -1 |awk '{print $1}'` + 200)) # 23384
+    BLOCK_COUNT=$((`du -c ../fs| tail -1 |awk '{print $1}'` + $RAMDISK_EXTRA_SPACE)) # 23384
     print_info "Ramdisk blocks: $((`du  --block-size=1 ../fs| grep 'fs$'|awk '{print $1}'`/1024)) (we use $BLOCK_COUNT)"
     [ -f ramdisk.img ] && rm ramdisk.img
     dd if=/dev/zero of=ramdisk.img bs=1024 count=$BLOCK_COUNT
