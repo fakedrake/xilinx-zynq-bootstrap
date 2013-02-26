@@ -359,10 +359,11 @@ if  [ $BUILD_SSH = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ssh" ]
     [ -d $SSH_INSTALL_ROOT/bin ] && [ -d $SSH_INSTALL_ROOT/libexec ] || fail "checking ssh install dirs (ssh never built)"
 
     # Move to filesystem
-    [ ! -d  $FILESYSTEM_ROOT/libexec/ ] && mkdir $FILESYSTEM_ROOT/libexec/
-    cp $SSH_INSTALL_ROOT/bin/sftp $FILESYSTEM_ROOT/bin/sftp || fail "copying sftp executable"
-    cp $SSH_INSTALL_ROOT/libexec/sftp-server $FILESYSTEM_ROOT/libexec/sftp-server || fail "copying sftp-server executable"
-    cp $SSH_INSTALL_ROOT/lib/libz.so.1 $FILESYSTEM_ROOT/lib/libz.so.1 || fail "copying libz"
+    [ ! -d  $FILESYSTEM_ROOT/usr/libexec/ ] && mkdir $FILESYSTEM_ROOT/usr/libexec/
+    [ ! -d  $FILESYSTEM_ROOT/usr/lib/ ] && mkdir $FILESYSTEM_ROOT/usr/lib/
+    cp $SSH_INSTALL_ROOT/bin/sftp $FILESYSTEM_ROOT/usr/bin/sftp || fail "copying sftp executable"
+    cp $SSH_INSTALL_ROOT/libexec/sftp-server $FILESYSTEM_ROOT/usr/libexec/sftp-server || fail "copying sftp-server executable"
+    cp $SSH_INSTALL_ROOT/lib/libz.so.1 $FILESYSTEM_ROOT/usr/lib/libz.so.1 || fail "copying libz"
 fi
 
 # Build ramdisk image
