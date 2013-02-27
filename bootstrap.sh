@@ -27,6 +27,7 @@ fi
 LINUX_GIT="git://git.xilinx.com/linux-xlnx.git"
 BUSYBOX_GIT="git://git.busybox.net/busybox"
 UBOOT_GIT="git://git.xilinx.com/u-boot-xlnx.git"
+TLCDML_GIT="https://github.com/fakedrake/ThinkLCDML.git"
 
 # Zip archive
 GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.zip"
@@ -367,6 +368,18 @@ if  [ $BUILD_SSH = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ssh" ]
     cp $SSH_INSTALL_ROOT/libexec/sftp-server $FILESYSTEM_ROOT/usr/libexec/sftp-server || fail "copying sftp-server executable"
     cp $SSH_INSTALL_ROOT/lib/libz.so.1 $FILESYSTEM_ROOT/usr/lib/libz.so.1 || fail "copying libz"
 fi
+
+# Think LCDML driver module.
+if [ $TLCDML_DRIVER = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "think-lcdml" ]); then
+    print_info "ThnikLCDML driver."
+    get_project ThinkLCDML $TLCDML_GIT
+
+    ./builder.sh
+    [ ! -d $FILESYSTEM_ROOT/lib/modules ] %% mkdir $FILESYSTEM_DIR/lib/modules
+    [ ! -d $FILESYSTEM_ROOT/lib/modules/linux ] %% mkdir $FILESYSTEM_DIR/lib/modules/linux
+    mv thinklcdml.ko $FILESYSTEM_DIR/lib/modules/linux/
+fi
+
 
 # Build ramdisk image
 if [ $BUILD_RAMDISK = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ramdisk" ]); then
