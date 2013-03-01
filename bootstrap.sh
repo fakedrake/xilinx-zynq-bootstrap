@@ -54,6 +54,7 @@ SSH_COMPILE="false"
 [ -d $SSH_INSTALL_ROOT ] || SSH_COMPILE="true"
 GET_GNU_TOOLS="true"
 GET_SDK_SCRIPTS="true"
+TLCDML_DRIVER="true"
 ONLY_PART="all"
 
 # Device trees
@@ -95,7 +96,6 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-print_info "Using gnu tools: $GNU_TOOLS"
 
 # Dependent vars
 GNU_TOOLS_UTILS=$GNU_TOOLS/arm-xilinx-linux-gnueabi/
@@ -112,10 +112,18 @@ function print_info {
     echo "[INFO] $1" | tee -a $LOG_FILE
 }
 
+print_info "Using gnu tools: $GNU_TOOLS"
+
+
+function fail {
+    echo "[ERROR] $1 failed!" | tee -a $LOG_FILE
+    exit 0
+}
+
 function get_project {
     if [ ! -d $1 ]; then
 	print_info "Cloning $1: $2"
-	git clone $2 $1
+	git clone $2 $1 || fail "Cloning $1"
 	cd "$1"
     else
 	print_info "Updating $1"
@@ -124,10 +132,6 @@ function get_project {
     fi
 }
 
-function fail {
-    echo "[ERROR] $1 failed!" | tee -a $LOG_FILE
-    exit 0
-}
 
 # Gnu toolchain
 if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "gnu-tools" ]); then
@@ -371,13 +375,16 @@ fi
 
 # Think LCDML driver module.
 if [ $TLCDML_DRIVER = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "think-lcdml" ]); then
+    cd $ROOT_DIR
     print_info "ThnikLCDML driver."
     get_project ThinkLCDML $TLCDML_GIT
 
     ./builder.sh
-    [ ! -d $FILESYSTEM_ROOT/lib/modules ] %% mkdir $FILESYSTEM_DIR/lib/modules
-    [ ! -d $FILESYSTEM_ROOT/lib/modules/linux ] %% mkdir $FILESYSTEM_DIR/lib/modules/linux
-    mv thinklcdml.ko $FILESYSTEM_DIR/lib/modules/linux/
+    [ ! -d $FILESYSTEM_ROOT/lib/modules ] && mkdir $FILESYSTEM_ROOT/lib/modules
+    [ ! -d $FILESYSTEM_ROOT/lib/modules/linux ] && mkdir $FILESYSTEM_ROOT/lib/modules/linux
+    mv thinklcdml.ko $FILESYSTEM_ROOT/lib/modules/linux/
+else
+    print_info "Skipping thinklcdml driver."
 fi
 
 
