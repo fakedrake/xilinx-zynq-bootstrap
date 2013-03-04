@@ -381,8 +381,8 @@ if [ $TLCDML_DRIVER = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "thi
 
     ./builder.sh
     [ ! -d $FILESYSTEM_ROOT/lib/modules ] && mkdir $FILESYSTEM_ROOT/lib/modules
-    [ ! -d $FILESYSTEM_ROOT/lib/modules/linux ] && mkdir $FILESYSTEM_ROOT/lib/modules/linux
-    mv thinklcdml.ko $FILESYSTEM_ROOT/lib/modules/linux/
+    [ ! -d $FILESYSTEM_ROOT/lib/modules/3.6.0-xilinx ] && mkdir $FILESYSTEM_ROOT/lib/modules/3.6.0-xilinx
+    mv thinklcdml.ko $FILESYSTEM_ROOT/lib/modules/3.6.0-xilinx/
 else
     print_info "Skipping thinklcdml driver."
 fi
