@@ -34,13 +34,17 @@ OPTIONS:
 --which-xmd	Show which xmd we would use. The script is not run.
 
 --xmd-shell 	Run an xmd shell. Try to have readline with rlwrap.  It is
-		recommended to run xmd from here anyway as it will try
-		to correct your xmd executable aswell
+recommended to run xmd from here anyway as it will try
+to correct your xmd executable aswell
 
 EOF
 
 XILINX_BIN_PATH=/opt/Xilinx/14.4/ISE_DS/EDK/bin/lin
 XILINX_BIN_PATH64=${XILINX_BIN_PATH}64
+
+LOG_FILE="load-linux.log"
+
+echo "Beginning Script" > $LOG_FILE
 
 # Get the xmd executable
 if [ -d $XILINX_BIN_PATH64 ] && [ $(uname -p) = 'x86_64' ]; then
@@ -135,6 +139,13 @@ else
     exit 0
 fi
 
+
+if [ "$RUN_MINICOM" = "true" ]; then
+    MINICOM_CMD="minicom -D $SERIAL -b 115200"
+    echo "Running $MINICOM_CMD"
+    $MINICOM_CMD
+fi
+
 # In order to have interactive output you may want to make a named pipe for this
 echo "connect arm hw
 source ps7_init.tcl
@@ -147,18 +158,11 @@ dow -data uramdisk.img.gz   0x20000000
 dow -data zynq-zc702.dtb    0x2A000000
 dow u-boot.elf
 con
-" | $XMD || fail "sending images to device"
+" | tee -a $LOG_FILE | $XMD || fail "sending images to device"
 sleep 1
 echo -e "\n" > $SERIAL
 
 if [ "$BOOT_LINUX" = 'true' ]; then
     sleep 2
     echo "bootm 0x30000000 0x20000000 0x2A000000" > $SERIAL
-fi
-
-if [ "$RUN_MINICOM" = "true" ]; then
-
-    MINICOM_CMD="minicom -D $SERIAL -b 115200"
-    echo "Running $MINICOM_CMD"
-    $MINICOM_CMD
 fi
