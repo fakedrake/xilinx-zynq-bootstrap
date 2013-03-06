@@ -119,7 +119,7 @@ if [ ! $SERIAL ] || [ ! -c $SERIAL ]; then
 fi
 
 [ ! -w $SERIAL ] && echo "Serial $SERIAL is not writeable. Try 'sudo chmod a+w $SERIAL'" && exit 0
-[ ! -r $SERIAL ] && [ "$RUN_MINICOM" = "true"] && echo "Serial $SERIAL is not readable. Cannot open minicom on it. Try 'sudo chmod a+rw $SERIAL'" && exit 0
+[ ! -r $SERIAL ] && [ "$RUN_MINICOM" = "true" ] && echo "Serial $SERIAL is not readable. Cannot open minicom on it. Try 'sudo chmod a+rw $SERIAL'" && exit 0
 
 if [ "$RESET_DEVICE" = 'true' ]; then
     echo "echo \"Device reset commanded by $(whoami)!\"" > $SERIAL
