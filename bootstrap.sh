@@ -116,22 +116,25 @@ print_info "Using gnu tools: $GNU_TOOLS"
 
 
 function fail {
-    echo "[ERROR] $1 failed!" | tee -a $LOG_FILE
+    echo "[ERROR] $1 failed! (cwd: $(pwd))" | tee -a $LOG_FILE
     exit 0
 }
 
 function get_project {
     if [ ! -d $1 ]; then
 	print_info "Cloning $1: $2"
-	git clone $2 $1 || fail "Cloning $1"
+	git clone $2 $1 -v || fail "Cloning $1"
 	cd "$1"
     else
-	print_info "Updating $1"
+	print_info "Updating $1 from $2"
 	cd "$1"
 	git pull
     fi
+    print_info "Successfull pulled project $1."
 }
 
+# In this file you may override any of the above
+[ -x overrides.sh ] && source ./overrides.sh
 
 # Gnu toolchain
 if ([ ! -d $GNU_TOOLS ] && [ $GET_GNU_TOOLS = "true" ]) && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "gnu-tools" ]); then
@@ -296,7 +299,7 @@ if [ $BUILD_DROPBEAR = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "dr
 	mkdir $ROOT_DIR/dropbear
 	print_info "Downloading dropbear"
 	wget $DROPBEAR_TAR_URL -O $ROOT_DIR/$DROPBEAR_TAR
-	echo "Uncompressing: tar xfvz $ROOT_DIR/$DROPBEAR_TAR -C $ROOT_DIR/dropbear/"
+	print_info "Uncompressing: tar xfvz $ROOT_DIR/$DROPBEAR_TAR -C $ROOT_DIR/dropbear/"
 	tar xfvz $ROOT_DIR/$DROPBEAR_TAR -C $ROOT_DIR/dropbear/
 	rm $ROOT_DIR/$DROPBEAR_TAR
     fi
@@ -328,16 +331,20 @@ if  [ $BUILD_SSH = "true" ] && ([ $ONLY_PART = "all" ] || [ $ONLY_PART = "ssh" ]
 
     cd $SSH_UNIVERSE_DIR
     SSL_DIR=$SSH_UNIVERSE_DIR/openssl-0.9.8d
-    ZLIB_DIR=$SSH_UNIVERSE_DIR/zlib-1.2.7
+    ZLIB_DIR=$SSH_UNIVERSE_DIR/zlib-1.2.8
     SSH_DIR=$SSH_UNIVERSE_DIR/openssh-6.1p1
 
-    [ ! -f openssh.tar.gz ] && wget http://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.1p1.tar.gz -O openssh.tar.gz
-    [ ! -f zlib.tar.gz ] && wget http://zlib.net/zlib-1.2.7.tar.gz -O zlib.tar.gz
-    [ ! -f openssl.tar.gz ] && wget http://www.openssl.org/source/openssl-0.9.8d.tar.gz -O openssl.tar.gz
+    ZLIB_URL=http://zlib.net/zlib-1.2.8.tar.gz
+    OPENSSH_URL=http://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.1p1.tar.gz
+    OPENSSL_URL=http://www.openssl.org/source/openssl-0.9.8d.tar.gz
 
-    [ ! -d $SSH_DIR ] && tar xvzf openssh.tar.gz
-    [ ! -d $SSL_DIR ] && tar xvzf openssl.tar.gz
-    [ ! -d $ZLIB_DIR ] && tar xvzf zlib.tar.gz
+    [ ! -f openssh.tar.gz ] && (print_info "Downloading openssh.tar.gz" && wget $OPENSSH_URL -O openssh.tar.gz || fail "openssh.tar.gz download")
+    [ ! -f zlib.tar.gz ] && (print_info "Downloading zlib.tar.gz" && wget $ZLIB_URL -O zlib.tar.gz || fail "zlib.tar.gz download")
+    [ ! -f openssl.tar.gz ] && (print_info "Downloading openssl.tar.gz" && wget $OPENSSL_URL -O openssl.tar.gz || fail "openssl.tar.gz download")
+
+    [ ! -d $SSH_DIR ] && (print_info "Uncompressing openssh.tar.gz" && tar xvzf openssh.tar.gz || fail "openssh.tar.gz extraction")
+    [ ! -d $SSL_DIR ] && (print_info "Uncompressing openssl.tar.gz" && tar xvzf openssl.tar.gz || fail "openssl.tar.gz extraction")
+    [ ! -d $ZLIB_DIR ] && (print_info "Uncompressing zlib.tar.gz" && tar xvzf zlib.tar.gz || fail "zlib.tar.gz extraction")
 
     if [ "$SSH_COMPILE" = "true" ]; then
     	# zlib
