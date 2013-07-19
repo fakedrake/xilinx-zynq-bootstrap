@@ -36,3 +36,10 @@
     date >> /homes/cperivol/Sandbox/xilinx-zynq-bootstrap/fs/last_touch && rm resources/uramdisk.img.gz &&
     ./bootstrap.sh --only ramdisk && cp resources/ramdisk.img resources.qemu/ramdisk.img
    #+END_EXAMPLE
+
+*** Mem allocation
+    Looks like fb_memsize is 0 when it should have been something
+    else.
+    #+BEGIN_EXAMPLE
+    modprobe thinklcdml fb_memsize=1920000
+    #+END_EXAMPLE
