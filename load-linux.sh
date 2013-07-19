@@ -146,6 +146,11 @@ if [ "$RUN_MINICOM" = "true" ]; then
     $MINICOM_CMD
 fi
 
+UIMAGE=uImage
+RAMDISK=uramdisk.img.gz
+DTB=zynq-zc702.dtb
+UBOOTELF=u-boot.elf
+
 # In order to have interactive output you may want to make a named pipe for this
 echo "connect arm hw
 source ps7_init.tcl
@@ -153,10 +158,10 @@ ps7_init
 init_user
 source stub.tcl
 target 64
-dow -data uImage            0x30000000
-dow -data uramdisk.img.gz   0x20000000
-dow -data zynq-zc702.dtb    0x2A000000
-dow u-boot.elf
+dow -data $UIMAGE	0x30000000
+dow -data $RAMDISK	0x20000000
+dow -data $DTB		0x2A000000
+dow $UBOOTELF
 con
 " | tee -a $LOG_FILE | $XMD || fail "sending images to device"
 sleep 1

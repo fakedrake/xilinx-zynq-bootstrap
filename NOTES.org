@@ -1,0 +1,38 @@
+* Notes
+  Here are some notes to keep in mind future generations.
+
+** Qemu
+   Well this was non-trivial but I think it should work. You need to
+   get the xilinx edition of qemu or hardware will not be supprted
+   properly. (the directories are off in the following)
+
+   #+BEGIN_EXAMPLE
+   git clone https://github.com/Xilinx/qemu
+   git checkout xilinx-master
+   ./configure --target-list="arm-softmmu,microblazeel-softmmu" --enable-fdt --disable-kvm
+   make
+   ./qemu-xilinx/arm-softmmu/qemu-system-arm -M xilinx-zynq-a9 -m 1024 -serial null -serial mon:stdio -dtb resources.qemu/qemu.dtb -kernel resources.qemu/zImage -initrd resources.qemu/ramdisk.img -nographic
+   #+END_EXAMPLE
+
+   Pay close attention to the last line.
+
+   Now you probably want gdb right? Well here goes:
+
+   #+BEGIN_EXAMPLE
+   # gdb setup here
+   #+END_EXAMPLE
+
+   You also want to see some host files from qemu so you may load
+   modules and stuff.
+
+** ThinkLCDML
+   Building thinklcdml is a bit weird. I know I should mount and everything but here is my workflow:
+
+   Compile thinklcdml with =make=
+   Then put the module in ramdisk:
+
+   #+BEGIN_EXAMPLE
+   cp ~/Projects/ThinkLCDML/thinklcdml.ko /homes/cperivol/Sandbox/xilinx-zynq-bootstrap/fs/lib/modules/3.6.0-xilinx/thinklcdml.ko &&
+    date >> /homes/cperivol/Sandbox/xilinx-zynq-bootstrap/fs/last_touch && rm resources/uramdisk.img.gz &&
+    ./bootstrap.sh --only ramdisk && cp resources/ramdisk.img resources.qemu/ramdisk.img
+   #+END_EXAMPLE

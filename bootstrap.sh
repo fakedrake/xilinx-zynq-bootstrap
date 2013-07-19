@@ -61,7 +61,7 @@ ONLY_PART="all"
 DTS_TREE=$ROOT_DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc702.dts
 DTB_TREE=$RESOURCES_DIR/`basename $DTS_TREE | tr '.dts' '.dtb'`
 
-RAMDISK_EXTRA_SPACE=1000
+RAMDISK_EXTRA_SPACE=500
 
 GNU_TOOLS="`pwd`/GNU_Tools/"
 if command -v arm-xilinx-linux-gnueabi-gcc; then
