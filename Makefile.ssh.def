@@ -1,0 +1,17 @@
+zlib-git-repo="https://github.com/madler/zlib"
+GIT_PROJECTS += zlib
+
+zlib:
+	@echo "Todo: build zlib"
+
+openssl-git-repo="git://git.openssl.org/openssl.git"
+GIT_PROJECTS += openssl
+
+openssl:
+	@echo "Todo: build openssl"
+
+# Make an organized way of getting ziped sources like you did with
+# git.
+
+openssh:
+	@echo "Todo: build openssh"
