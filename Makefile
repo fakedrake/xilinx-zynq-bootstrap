@@ -1,5 +1,3 @@
-.PHONY: gnu_tools print_vars $(GIT_PROJECTS)
-
 # Definable
 
 # My directories
@@ -9,13 +7,11 @@ SOURCES_DIR=$(ROOT_DIR)/sources
 RESOURCES_DIR=$(ROOT_DIR)/resources
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 
-GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.zip"
+GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
-GNU_TOOLS_DIR=$(SOURCES_DIR)/GNU_Tools
+GNU_TOOLS_DIR=GNU_Tools/
 
-FILESYSTEM_ROOT=fs
-
-all: uboot linux busybox filesystem ramdisk
+FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 force: ;
 
@@ -33,7 +29,7 @@ $(DRAFTS_DIR):
 directories: $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR)
 
 # GNU Tools
-GNU_TOOLS=$(GNU_TOOLS_DIR)
+GNU_TOOLS=$(SOURCES_DIR)/gnu-tools-archive/$(GNU_TOOLS_DIR)
 GNU_TOOLS_UTILS=$(GNU_TOOLS)/arm-xilinx-linux-gnueabi/
 GNU_TOOLS_BIN=$(GNU_TOOLS)/bin
 GNU_TOOLS_HOST=arm-xilinx-linux-gnueabi
@@ -41,19 +37,12 @@ GNU_TOOLS_PREFIX=$(GNU_TOOLS_BIN)/arm-xilinx-linux-gnueabi-
 CROSS_COMPILE := $(GNU_TOOLS_PREFIX)
 PATH := ${PATH}:$(GNU_TOOLS_BIN):$(SOURCES_DIR)/uboot-git/tools/
 
-
-gnu_tools: | $(GNU_TOOLS_DIR)
+gnu-tools-tar-url=$(GNU_TOOLS_FTP)
+TAR_PROJECTS += gnu-tools
+gnu-tools:
 	@echo "Getting GNU Tools"
 
-$(GNU_TOOLS_DIR) : $(DRAFTS_DIR)/$(GNU_TOOLS_ZIP)
-	unzip $(DRAFTS_DIR)/$(GNU_TOOLS_ZIP) -d $(SOURCES_DIR)
-
-$(DRAFTS_DIR)/$(GNU_TOOLS_ZIP) : | $(DRAFTS_DIR)
-	wget $(GNU_TOOLS_FTP) -O $(DRAFTS_DIR)/$(GNU_TOOLS_ZIP)
-
-gnu_tools_clean :
-	rm -rf $(DRAFTS_DIR)/$(GNU_TOOLS_ZIP) $(GNU_TOOLS_DIR)
-
+gnu-tools-clean: gnu-tools-archive-clean
 
 # GIT PROJECTS
 # To define a project provide a dir name, a repo url and register it
@@ -62,7 +51,7 @@ GIT_PROJECTS += uboot
 
 uboot: $(RESOURCES_DIR)/u-boot.elf
 
-$(RESOURCES_DIR)/u-boot.elf:  gnu_tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	cd $(SOURCES_DIR)/uboot-git ; \
 	make zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
@@ -80,7 +69,7 @@ linux: $(RESOURCES_DIR)/uImage $(DTB_TREE)
 $(DTB_TREE):
 	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
 
-$(RESOURCES_DIR)/uImage: $(SOURCES_DIR)/linux-git uboot gnu_tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/uImage: $(SOURCES_DIR)/linux-git uboot gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	cd $(SOURCES_DIR)/linux-git; \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
@@ -92,42 +81,25 @@ $(RESOURCES_DIR)/uImage: $(SOURCES_DIR)/linux-git uboot gnu_tools | $(RESOURCES_
 busybox-git-repo="git://git.busybox.net/busybox"
 GIT_PROJECTS += busybox
 
-busybox: gnu_tools
+busybox: $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
 	cd $(SOURCES_DIR)/busybox-git; \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install
 
-$(FILESYSTEM_ROOT):
-	mkdir	$(FILESYSTEM_ROOT) \
-		$(FILESYSTEM_ROOT)/lib \
-		$(FILESYSTEM_ROOT)/dev \
-		$(FILESYSTEM_ROOT)/etc \
-		$(FILESYSTEM_ROOT)/etc/dropbear \
-		$(FILESYSTEM_ROOT)/etc/init.d \
-		$(FILESYSTEM_ROOT)/mnt \
-		$(FILESYSTEM_ROOT)/opt \
-		$(FILESYSTEM_ROOT)/proc \
-		$(FILESYSTEM_ROOT)/root \
-		$(FILESYSTEM_ROOT)/sys \
-		$(FILESYSTEM_ROOT)/tmp \
-		$(FILESYSTEM_ROOT)/var \
-		$(FILESYSTEM_ROOT)/var/log \
-		$(FILESYSTEM_ROOT)/var/www \
-		$(FILESYSTEM_ROOT)/sbin \
-		$(FILESYSTEM_ROOT)/usr/ \
-		$(FILESYSTEM_ROOT)/usr/bin
+FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
 
+$(FS_DIRS):
+	mkdir $@
 
-
-filesystem: busybox $(FILESYSTEM_ROOT)
+filesystem: $(FS_DIRS) busybox
 	@echo "Building filesystem"
 	cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/
 	cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/
-	cp -R $(GNU_TOOLS_UTILS)/libc/usr/bin/* $(FILESYSTEM_ROOT)/usr/bin/
+	cp -R $(GNU_TOOLS_UTILS)/libc/usr/* $(FILESYSTEM_ROOT)/usr/
 
 	for i in $(FILESYSTEM_ROOT)/lib/*; do \
-		[ "`file -b $$i`" = "ASCII text" ] || $(GNU_TOOLS_PREFIX)strip $$i; \
+		if ([ -f "$$i" ] && [ ! "`file -b $$i`" = "ASCII text" ]); then $(GNU_TOOLS_PREFIX)strip $$i; fi; \
 	done
 
 	cp $(DATA_DIR)/fstab $(FILESYSTEM_ROOT)/etc/fstab
@@ -176,6 +148,10 @@ $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
 sdk:
 	@echo "Pulling sdk scripts"
 
+
+include ./Makefile.ssh.def
+
+
 # Have repositories
 .SECONDEXPANSION :
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
@@ -184,10 +160,16 @@ $(SOURCES_DIR)/%-git : force
 	[ -d $@ ] || git clone $($*-git-repo) $@
 	@cd $@ && git pull
 
-%-clean:
+%-git-purge:
 	rm -rf $(SOURCES_DIR)/$*-git
 
-print_vars:
+%-clean:
+	cd $(SOURCES_DIR)/$*-git && make clean
+
+%-distclean:
+	cd $(SOURCES_DIR)/$*-git && make distclean
+
+print-vars:
 	@echo "GNU_TOOLS_FTP=$(GNU_TOOLS_FTP)"
 	@echo "GNU_TOOLS_ZIP=$(GNU_TOOLS_ZIP)"
 	@echo "GNU_TOOLS_DIR=$(GNU_TOOLS_DIR)"
@@ -201,3 +183,28 @@ print_vars:
 	@echo "uboot-git-repo=$(uboot-git-repo)"
 	@echo "linux-git-repo=$(linux-git-repo)"
 	@echo "busybox-git-repo=$(busybox-git-repo)"
+	@echo "openssh-zip-url=$(openssh-zip-url)"
+
+# For zip archives we need a url to the zip archive an the path from
+# the zip root to the project root.
+.SECONDEXPANSION :
+$(TAR_PROJECTS) :  $(SOURCES_DIR) $(SOURCES_DIR)/$$@-archive
+
+.SECONDARY:
+$(DRAFTS_DIR)/%.tar.gz: $(DRAFTS_DIR)
+	echo "Pulling $*."
+	wget $($*-tar-url) -O $(DRAFTS_DIR)/$*.tar.gz
+
+.SECONDEXPANSION :
+$(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
+	mkdir $@
+	cd $@ && tar xvzf $(DRAFTS_DIR)/$*.tar.gz
+
+%-archive-clean:
+	rm -rf $(SOURCES_DIR)/$*-archive $(DRAFTS_DIR)/$*.tar.gz
+
+PROJECTS += $(TAR_PROJECTS)
+PROJECTS += $(GIT_PROJECTS)
+.PHONY: $(PROJECTS)
+
+all: $(PROJECTS)
