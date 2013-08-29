@@ -15,6 +15,8 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 force: ;
 
+board-ready: linux-build ramdisk-board uboot-build sdk
+
 # Targets
 
 $(SOURCES_DIR):
@@ -49,7 +51,7 @@ gnu-tools-clean: gnu-tools-archive-clean
 uboot-git-repo="git://git.xilinx.com/u-boot-xlnx.git"
 GIT_PROJECTS += uboot
 
-uboot: $(RESOURCES_DIR)/u-boot.elf
+uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 
 $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
@@ -61,15 +63,15 @@ $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 linux-git-repo=git://git.xilinx.com/linux-xlnx.git
 GIT_PROJECTS += linux
 
-DTB_TREE=$(RESOURCES_DIR)/devicetree.dtb
+DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702.dts
 
-linux: $(RESOURCES_DIR)/uImage $(DTB_TREE)
+linux-build: linux $(RESOURCES_DIR)/uImage $(DTB_TREE)
 
 $(DTB_TREE):
 	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
 
-$(RESOURCES_DIR)/uImage: $(SOURCES_DIR)/linux-git uboot gnu-tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/uImage: uboot-build gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	cd $(SOURCES_DIR)/linux-git; \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
@@ -81,7 +83,7 @@ $(RESOURCES_DIR)/uImage: $(SOURCES_DIR)/linux-git uboot gnu-tools | $(RESOURCES_
 busybox-git-repo="git://git.busybox.net/busybox"
 GIT_PROJECTS += busybox
 
-busybox: $(FS_DIRS) gnu-tools
+busybox-build: busybox $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
 	cd $(SOURCES_DIR)/busybox-git; \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
@@ -92,7 +94,7 @@ FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FIL
 $(FS_DIRS):
 	mkdir $@
 
-filesystem: $(FS_DIRS) busybox
+filesystem-nossh: $(FS_DIRS) busybox-build
 	@echo "Building filesystem"
 	cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/
 	cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/
@@ -114,9 +116,10 @@ filesystem: $(FS_DIRS) busybox
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
 	$(shell sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
 
-dropbear: filesystem
-# XXX: TODO
-	@echo "Building dropbear..."
+filesystem: filesystem-nossh openssh-build
+
+filesystem-clean:
+	rm -rf $(FILESYSTEM_ROOT)
 
 ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
@@ -129,13 +132,14 @@ $(RESOURCES_DIR)/ramdisk.img: filesystem resources | $(DRAFTS_DIR)
 	tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0
 
 	mkdir $(DRAFTS_DIR)/ramdisk
+	@echo "Sudo is used to mount ramdisk..."
 	sudo mount -o loop $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/
 	sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/
 	sudo umount $(DRAFTS_DIR)/ramdisk/
 	rmdir $(DRAFTS_DIR)/ramdisk/
 
-clean-ramdisk:
-	$(shell [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && sudo umount $(DRAFTS_DIR)/ramdisk/)
+ramdisk-clean:
+	$(shell [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/)
 	rm -rf $(DRAFTS_DIR)/ramdisk
 	rm -rf $(RESOURCES_DIR)/ramdisk.img
 
@@ -145,8 +149,10 @@ $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
 $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
 	$(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz
 
-sdk:
-	@echo "Pulling sdk scripts"
+sdk: $(RESOURCES_DIR)/ps7_init.tcl $(RESOURCES_DIR)/ps7_init.tcl
+
+$(RESOURCES_DIR)/%.tcl :
+	cp $(DATA_DIR)/$*.tcl $@
 
 
 include ./Makefile.ssh.def
@@ -202,9 +208,3 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 
 %-archive-clean:
 	rm -rf $(SOURCES_DIR)/$*-archive $(DRAFTS_DIR)/$*.tar.gz
-
-PROJECTS += $(TAR_PROJECTS)
-PROJECTS += $(GIT_PROJECTS)
-.PHONY: $(PROJECTS)
-
-all: $(PROJECTS)

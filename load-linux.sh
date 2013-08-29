@@ -150,13 +150,15 @@ UIMAGE=uImage
 RAMDISK=uramdisk.img.gz
 DTB=zynq-zc702.dtb
 UBOOTELF=u-boot.elf
+PS7_INIT_TCL=ps7_init.tcl
+STUB_TCL=stub.tcl
 
 # In order to have interactive output you may want to make a named pipe for this
 echo "connect arm hw
-source ps7_init.tcl
+source $PS7_INIT_TCL
 ps7_init
 init_user
-source stub.tcl
+source $STUB_TCL
 target 64
 dow -data $UIMAGE	0x30000000
 dow -data $RAMDISK	0x20000000

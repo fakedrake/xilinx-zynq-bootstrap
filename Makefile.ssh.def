@@ -3,7 +3,7 @@ SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)
 zlib-git-repo="https://github.com/madler/zlib"
 GIT_PROJECTS += zlib
 
-zlib: gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+zlib-build: zlib gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
 	cd $(SOURCES_DIR)/zlib-git/; \
 	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$(SSH_INSTALL_ROOT); \
 	make; \
@@ -12,10 +12,10 @@ zlib: gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
 openssl-git-repo="git://git.openssl.org/openssl.git"
 GIT_PROJECTS += openssl
 
-openssl: gnu-tools filesystem zlib $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+openssl-build: openssl gnu-tools filesystem-nossh zlib-build $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
 	@echo "Cross compiling openssl: $(CROSS_COMPILE)"
 	# or maybe linux-generic32 or linux-armv4
-	cd $(SOURCES_DIR)/$@-git/; \
+	cd $(SOURCES_DIR)/openssl-git/; \
 	 CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" AR="$(CROSS_COMPILE)ar" RANLIB="$(CROSS_COMPILE)ranlib" CFLAGS="--sysroot=$(FILESYSTEM_ROOT)" ./Configure dist zlib no-asm --prefix="$(SSH_INSTALL_ROOT)"; \
 	make CPATH="$(FILESYSTEM_ROOT)/include" CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)"; \
 	make all install_sw	# Installing documentation is not very stable for now.
@@ -30,9 +30,9 @@ openssl-distclean:
 # git.
 openssh-tar-url="ftp://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.2p2.tar.gz"
 TAR_PROJECTS += openssh
-openssh: gnu-tools openssl zlib $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
-	echo "Building $@"
-	cd $(SOURCES_DIR)/$@-archive/*/; ./configure --prefix=$(FILESYSTEM_ROOT) --host=$(GNU_TOOLS_HOST) --with-privsep-path=$(FILESYSTEM_ROOT)/var/empty --with-libs --with-zlib=$(SSH_INSTALL_ROOT) --with-ssl-dir=$(SSH_INSTALL_ROOT) --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip" ; \
+openssh-build: openssh gnu-tools openssl-build zlib-build $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+	echo "Building $openssh-archive"
+	cd $(SOURCES_DIR)/openssh-archive/*/; ./configure --prefix=$(FILESYSTEM_ROOT) --host=$(GNU_TOOLS_HOST) --with-privsep-path=$(FILESYSTEM_ROOT)/var/empty --with-libs --with-zlib=$(SSH_INSTALL_ROOT) --with-ssl-dir=$(SSH_INSTALL_ROOT) --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip" ; \
 	make; make install-nokeys
 
 openssh-clean: openssh-archive-clean
