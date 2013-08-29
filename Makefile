@@ -191,7 +191,7 @@ print-vars:
 $(TAR_PROJECTS) :  $(SOURCES_DIR) $(SOURCES_DIR)/$$@-archive
 
 .SECONDARY:
-$(DRAFTS_DIR)/%.tar.gz: $(DRAFTS_DIR)
+$(DRAFTS_DIR)/%.tar.gz: | $(DRAFTS_DIR)
 	echo "Pulling $*."
 	wget $($*-tar-url) -O $(DRAFTS_DIR)/$*.tar.gz
 
