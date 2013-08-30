@@ -6,6 +6,7 @@ DATA_DIR=$(ROOT_DIR)/data
 SOURCES_DIR=$(ROOT_DIR)/sources
 RESOURCES_DIR=$(ROOT_DIR)/resources
 DRAFTS_DIR=$(ROOT_DIR)/drafts
+TOOLS_DIR=$(ROOT_DIR)/tools
 
 GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
@@ -18,17 +19,9 @@ force: ;
 board-ready: linux-build ramdisk-board uboot-build sdk
 
 # Targets
-
-$(SOURCES_DIR):
-	mkdir $(SOURCES_DIR)
-
-$(RESOURCES_DIR):
-	mkdir $(RESOURCES_DIR)
-
-$(DRAFTS_DIR):
-	mkdir $(DRAFTS_DIR)
-
-directories: $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR)
+DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR)
+$(DIRECTORIES):
+	mkdir $@
 
 # GNU Tools
 GNU_TOOLS=$(SOURCES_DIR)/gnu-tools-archive/$(GNU_TOOLS_DIR)
@@ -156,7 +149,7 @@ $(RESOURCES_DIR)/%.tcl :
 
 
 include ./Makefile.ssh.def
-
+include ./Makefile.android
 
 # Have repositories
 .SECONDEXPANSION :

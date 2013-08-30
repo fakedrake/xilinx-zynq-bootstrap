@@ -1,0 +1,44 @@
+ANDROID_DTS_TREE="$(SOURCES_DIR)/kernel-android-git/arch/arm/boot/dts/zynq-zc702-xylon-hdmi.dts"
+ANDROID_DTB_TREE="$(RESOURCES_DIR)/android-devtree.dtb"
+
+kernel-android-git-repo="git://git.iveia.com/scm/xilinx/android/kernel/zynq.git"
+GIT_PROJECTS = kernel-android
+
+.PHONY: kernel-android-build
+kernel-android-build: kernel-android $(ANDROID_DTB_TREE)
+	make xilinx_android_defconfig
+	make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_android_defconfig
+	make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) zImage
+
+$(ANDROID_DTB_TREE):
+	$(SOURCES_DIR)/kernel-android-git/scripts/dtc/dtc -I dts -O dtb -o $(ANDROID_DTB_TREE) $(ANDROID_DTS_TREE)
+
+REPO="$(TOOLS_DIR)/repo"
+REPO_URL="https://dl-ssl.google.com/dl/googlesource/git-repo/repo"
+
+.PRECIOUS:
+$(REPO): | $(TOOLS_DIR)
+	wget $(REPO_URL) -O $(REPO)
+	chmod a+x ~/bin/repo
+
+ANDROID_ROOT_IMG="$(RESOURCES_DIR)/android-root.img"
+ANDROID_MANIFEST="git://git.iveia.com/scm/xilinx/android/platform/manifest.git"
+ANDROID_BRANCH="android-zynq-1.0"
+
+$(ANDROID_SOURCE): $(REPO)
+	[ -d $(ANDROID_SOURCE) ] || mkdir -p $(ANDROID_SOURCE)
+	cd $(ANDROID_SOURCE); \
+	repo sync || $(REPO) init -u $(ANDROID_MANIFEST) -b $(ANDROID_BRANCH)
+
+.PHONY: android-build
+android-build: $(ANDROID_ROOT_IMG)
+
+$(ANDROID_ROOT_IMG): $(ANDROID_SOURCE)
+	cd $(ANDROID_SOURCE); \
+	. build/envsetup.sh && lunch generic-eng && make -j 4
+	mv $(DATA_DIR)/Makefile.zynq $(ANDROID_SOURCE)
+	cd $(ANDROID_SOURCE) && make -f Makefile.zynq;
+	cp $(ANDROID_SOURCE)/root.img $(ANDROID_ROOT_IMG)
+
+.PHONY: android-all
+android-all: kernel-android-build android-build
