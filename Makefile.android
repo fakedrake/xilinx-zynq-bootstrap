@@ -5,30 +5,51 @@ kernel-android-git-repo="git://git.iveia.com/scm/xilinx/android/kernel/zynq.git"
 GIT_PROJECTS = kernel-android
 
 .PHONY: kernel-android-build
-kernel-android-build: kernel-android $(ANDROID_DTB_TREE)
-	make xilinx_android_defconfig
-	make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_android_defconfig
-	make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) zImage
+kernel-android-build: $(RESOURCES_DIR) kernel-android $(RESOURCES_DIR)/android-zImage $(ANDROID_DTB_TREE)
+
+$(RESOURCES_DIR)/android-zImage: gnu-tools
+	cd $(SOURCES_DIR)/kernel-android-git; \
+	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_android_defconfig; \
+	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) zImage
+	cp $(SOURCES_DIR)/kernel-android-git/arch/arm/boot/zImage $(RESOURCES_DIR)/android-zImage
 
 $(ANDROID_DTB_TREE):
 	$(SOURCES_DIR)/kernel-android-git/scripts/dtc/dtc -I dts -O dtb -o $(ANDROID_DTB_TREE) $(ANDROID_DTS_TREE)
 
 REPO="$(TOOLS_DIR)/repo"
+PATH:=$(TOOLS_DIR):$(PATH)
 REPO_URL="https://dl-ssl.google.com/dl/googlesource/git-repo/repo"
 
-.PRECIOUS:
-$(REPO): | $(TOOLS_DIR)
+.SECONDARY:
+$(REPO): $(TOOLS_DIR)/python | $(TOOLS_DIR)
 	wget $(REPO_URL) -O $(REPO)
-	chmod a+x ~/bin/repo
+	chmod a+x $(REPO)
+
+PYTHON_V2=$(shell python2 --version |& tee)
+PYTHON_V=$(shell python --version |& tee)
+
+.SECONDARY:
+$(TOOLS_DIR)/python:
+	if [ "$(PYTHON_V)" = "Python 2.7.5" ]; then \
+		ln -s $(shell which python) $(TOOLS_DIR)/python; \
+	elif [ "$(PYTHON_V2)" = "Python 2.7.5" ]; then \
+		ln -s $(shell which python2) $(TOOLS_DIR)/python; \
+	else \
+		echo "No good python version found. (found $(PYTHON_V) and $(PYTHON_V2))"; \
+	fi
 
 ANDROID_ROOT_IMG="$(RESOURCES_DIR)/android-root.img"
 ANDROID_MANIFEST="git://git.iveia.com/scm/xilinx/android/platform/manifest.git"
 ANDROID_BRANCH="android-zynq-1.0"
+ANDROID_SOURCE=$(SOURCES_DIR)/android-platform-repo/
 
 $(ANDROID_SOURCE): $(REPO)
 	[ -d $(ANDROID_SOURCE) ] || mkdir -p $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE); \
-	repo sync || $(REPO) init -u $(ANDROID_MANIFEST) -b $(ANDROID_BRANCH)
+	$(REPO) init -u $(ANDROID_MANIFEST) -b $(ANDROID_BRANCH) && $(REPO) sync
+
+purge-android-platform:
+	rm -rf $(ANDROID_SOURCE)
 
 .PHONY: android-build
 android-build: $(ANDROID_ROOT_IMG)
