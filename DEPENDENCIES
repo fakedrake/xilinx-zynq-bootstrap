@@ -1,0 +1,6 @@
+Here are some things i had to do systemwide to run this.
+
+- Have a java6 environment in /opt/java6/. (AUR: jdk6, jre6)
+- 32bit libraries:
+  - gcc-multilib
+  - ncurses
