@@ -1,3 +1,6 @@
+# REMEMBER: if you are missing any systemwide libs try the 32-bit
+# version first
+
 ANDROID_DTS_TREE="$(SOURCES_DIR)/kernel-android-git/arch/arm/boot/dts/zynq-zc702-xylon-hdmi.dts"
 ANDROID_DTB_TREE="$(RESOURCES_DIR)/android-devtree.dtb"
 
@@ -19,6 +22,10 @@ $(ANDROID_DTB_TREE):
 REPO="$(TOOLS_DIR)/repo"
 PATH:=$(TOOLS_DIR):$(PATH)
 REPO_URL="https://dl-ssl.google.com/dl/googlesource/git-repo/repo"
+
+# Java stuff
+JAVA_HOME:=/opt/java6/
+PATH:=$(JAVA_HOME)/bin/:$(PATH)
 
 .SECONDARY:
 $(REPO): $(TOOLS_DIR)/python | $(TOOLS_DIR)
@@ -54,12 +61,17 @@ purge-android-platform:
 .PHONY: android-build
 android-build: $(ANDROID_ROOT_IMG)
 
+# Will probably have to remove srec from repo
 $(ANDROID_ROOT_IMG): $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE); \
-	. build/envsetup.sh && lunch generic-eng && make -j 4
+	. build/envsetup.sh && lunch generic-eng && make
 	mv $(DATA_DIR)/Makefile.zynq $(ANDROID_SOURCE)
-	cd $(ANDROID_SOURCE) && make -f Makefile.zynq;
+	cd $(ANDROID_SOURCE) && make -f Makefile.zynq
 	cp $(ANDROID_SOURCE)/root.img $(ANDROID_ROOT_IMG)
+
+android-clean:
+	cd $(ANDROID_SOURCE); \
+	. build/envsetup.sh && lunch generic-eng && make clean
 
 .PHONY: android-all
 android-all: kernel-android-build android-build
