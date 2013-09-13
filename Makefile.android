@@ -37,6 +37,7 @@ PYTHON_V=$(shell python --version |& tee)
 
 .SECONDARY:
 $(TOOLS_DIR)/python:
+	[ -f $@ ] && rm $@
 	if [ "$(PYTHON_V)" = "Python 2.7.5" ]; then \
 		ln -s $(shell which python) $(TOOLS_DIR)/python; \
 	elif [ "$(PYTHON_V2)" = "Python 2.7.5" ]; then \
@@ -50,8 +51,9 @@ ANDROID_MANIFEST="git://git.iveia.com/scm/xilinx/android/platform/manifest.git"
 ANDROID_BRANCH="android-zynq-1.0"
 ANDROID_SOURCE=$(SOURCES_DIR)/android-platform-repo/
 
+
 $(ANDROID_SOURCE): $(REPO)
-	[ -d $(ANDROID_SOURCE) ] || mkdir -p $(ANDROID_SOURCE)
+	[ -d $(ANDROID_SOURCE) ] || mkdir $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE); \
 	$(REPO) init -u $(ANDROID_MANIFEST) -b $(ANDROID_BRANCH) && $(REPO) sync
 
@@ -61,10 +63,13 @@ purge-android-platform:
 .PHONY: android-build
 android-build: $(ANDROID_ROOT_IMG)
 
+
+CFLAGS += -pedantic
+export CFLAGS
 # Will probably have to remove srec from repo
 $(ANDROID_ROOT_IMG): $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE); \
-	. build/envsetup.sh && lunch generic-eng && make
+	. build/envsetup.sh && lunch generic-eng && make LOCAL_CFLAGS=-fpermissive
 	mv $(DATA_DIR)/Makefile.zynq $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE) && make -f Makefile.zynq
 	cp $(ANDROID_SOURCE)/root.img $(ANDROID_ROOT_IMG)

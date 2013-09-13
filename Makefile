@@ -21,7 +21,7 @@ board-ready: linux-build ramdisk-board uboot-build sdk
 # Targets
 DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR)
 $(DIRECTORIES):
-	mkdir $@
+	[ $@ ] || mkdir $@
 
 # GNU Tools
 GNU_TOOLS=$(SOURCES_DIR)/gnu-tools-archive/$(GNU_TOOLS_DIR)

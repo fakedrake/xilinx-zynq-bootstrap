@@ -4,3 +4,19 @@ Here are some things i had to do systemwide to run this.
 - 32bit libraries:
   - gcc-multilib
   - ncurses
+  - lib32-readline
+- at the top of
+  sources/android-platform-repo/dalvik/vm/native/dalvik_system_Zygote.c
+  add #include <sys/resource.h> this is a gcc 4.7.x error so in Ubuntu
+  this wont be an issue.
+- Remove these from manifes through a local_manifest.xml in .repo/
+
+#+BEGIN_EXAMPLE
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remove-project name="platform/external/srec" />
+  <remove-project name="platform/external/v8" />
+  <remove-project name="platform/external/yaffs2" />
+</manifest>
+
+#+END_EXAMPLE
