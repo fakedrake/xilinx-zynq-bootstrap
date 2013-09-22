@@ -43,3 +43,20 @@
     #+BEGIN_EXAMPLE
     modprobe thinklcdml fb_memsize=1920000
     #+END_EXAMPLE
+
+
+* Roadmap
+
+** All android components
+   Here is what we will need:
+
+   | DONE  | Filename as downloaded                   | Filename on SD card | Description                                                                                                                      | Vendor                              |
+   |-------+------------------------------------------+---------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------------------------|
+   |       | BOOT_FMC.BIN & BOOT_HDMI.BIN             | BOOT.BIN            | Created using the EDK bootgen tool - contains the FSBL (First Stage Boot Loader), the FPGA bit-stream, and the U-Boot bootloader | Xylon                               |
+   | x     | zImage                                   | zImage              | The Linux kernel                                                                                                                 | iVeia                               |
+   | x     | devicetree_fmc.dtb & devicetree_hdmi.dtb | devicetree.dtb      | The Device Tree Blob                                                                                                             | iVeia                               |
+   | kinda | ramdisk8M.image.gz                       | ramdisk8M.image.gz  | The Linux ramdisk, modified from the Xilinx's ZC702 release to run startup.sh on boot                                            | Xylon (with modifications by iVeia) |
+   | kinda | startup.sh                               | startup.sh          | A script run at the end of boot (used to start Android)                                                                          | iVeia                               |
+   | kinda | root.img                                 | root.img            | The Android Root Filesystem                                                                                                      | iVeia                               |
+
+   Check [[http://www.wiki.xilinx.com/Android%2BOn%2BZynq%2BGetting%2BStarted%2BGuide][the android xilinx wiki]] for more details
