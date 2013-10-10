@@ -147,9 +147,13 @@ sdk: $(RESOURCES_DIR)/ps7_init.tcl $(RESOURCES_DIR)/ps7_init.tcl
 $(RESOURCES_DIR)/%.tcl :
 	cp $(DATA_DIR)/$*.tcl $@
 
-
 include ./Makefile.ssh.def
 include ./Makefile.android
+include ./Makefile.dfb
+
+show-projects:
+	@echo "Git Projects: $(GIT_PROJECTS)"
+	@echo "Archive Projects: $(TAR_PROJECTS)"
 
 # Have repositories
 .SECONDEXPANSION :

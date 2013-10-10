@@ -1,0 +1,50 @@
+JPEG_URL="http://www.ijg.org/files/jpegsrc.v9.tar.gz"
+PNG_URL="ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.6.tar.gz"
+FREETYPE_URL="http://download.savannah.gnu.org/releases/freetype/freetype-2.4.12.tar.gz"
+
+# JPEG
+jpeg-tar-url=$(JPEG_URL)
+TAR_PROJECTS += jpeg
+
+jpeg-build: jpeg
+	cd $(SOURCES_DIR)/jpeg-archive/*/; \
+	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc"; \
+	make ;\
+	make install DESTDIR=$(FILESYSTEM_ROOT)
+
+jpeg:
+	@echo "Getting libjpeg"
+
+jpeg-clean: jpeg-archive-clean
+
+# PNG
+png-tar-url=$(PNG_URL)
+TAR_PROJECTS += png
+
+png-build: png zlib-build
+	cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/; \
+	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib/"; \
+	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
+	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/"; \
+	make install
+
+png:
+	@echo "Getting libpng"
+
+
+# FreeType
+freetype-tar-url=$(FREETYPE_URL)
+TAR_PROJECTS += freetype
+
+freetype-build: freetype zlib-build
+	cd $(SOURCES_DIR)/freetype-archive/*/; mkdir -p objs/;  cd objs/; \
+	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
+	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
+	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/"; \
+	make install
+
+freetype:
+	@echo "Getting libfreetype"
+
+
+freetype-clean: freetype-archive-clean

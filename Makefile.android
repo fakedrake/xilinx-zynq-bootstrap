@@ -5,7 +5,7 @@ ANDROID_DTS_TREE="$(SOURCES_DIR)/kernel-android-git/arch/arm/boot/dts/zynq-zc702
 ANDROID_DTB_TREE="$(RESOURCES_DIR)/android-devtree.dtb"
 
 kernel-android-git-repo="git://git.iveia.com/scm/xilinx/android/kernel/zynq.git"
-GIT_PROJECTS = kernel-android
+GIT_PROJECTS += kernel-android
 
 .PHONY: kernel-android-build
 kernel-android-build: $(RESOURCES_DIR) kernel-android $(RESOURCES_DIR)/android-zImage $(ANDROID_DTB_TREE)

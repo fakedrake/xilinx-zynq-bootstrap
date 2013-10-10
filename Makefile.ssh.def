@@ -1,11 +1,12 @@
 SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)
+ZLIB_INSTALL_ROOT=$(FILESYSTEM_ROOT)
 
 zlib-git-repo="https://github.com/madler/zlib"
 GIT_PROJECTS += zlib
 
 zlib-build: zlib gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
 	cd $(SOURCES_DIR)/zlib-git/; \
-	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$(SSH_INSTALL_ROOT); \
+	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$(ZLIB_INSTALL_ROOT); \
 	make; \
 	make install;
 
@@ -17,7 +18,7 @@ openssl-build: openssl gnu-tools filesystem-nossh zlib-build $(FILESYSTEM_ROOT) 
 	# or maybe linux-generic32 or linux-armv4
 	cd $(SOURCES_DIR)/openssl-git/; \
 	 CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" AR="$(CROSS_COMPILE)ar" RANLIB="$(CROSS_COMPILE)ranlib" CFLAGS="--sysroot=$(FILESYSTEM_ROOT)" ./Configure dist zlib no-asm --prefix="$(SSH_INSTALL_ROOT)"; \
-	make CPATH="$(FILESYSTEM_ROOT)/include" CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)"; \
+	make CPATH="$(FILESYSTEM_ROOT)/include" CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" ; \
 	make all install_sw	# Installing documentation is not very stable for now.
 
 openssl-check-libcrypto:
