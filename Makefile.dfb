@@ -2,6 +2,14 @@ JPEG_URL="http://www.ijg.org/files/jpegsrc.v9.tar.gz"
 PNG_URL="ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.6.tar.gz"
 FREETYPE_URL="http://download.savannah.gnu.org/releases/freetype/freetype-2.4.12.tar.gz"
 
+FLUX_URL=~/Projects/ThinkSilicon/DFB/flux/
+DFB_URL=~/Projects/ThinkSilicon/DFB/dfb-mainline/
+DIRECTFB_EXAMPLES_URL=http://directfb.org/downloads/Extras/DirectFB-examples-1.7.0.tar.gz
+# DFB_URL="git://git.directfb.org/git/directfb/core/DirectFB.git"
+# FLUX_URL="git://git.directfb.org/git/directfb/core/flux"
+
+dfb-deps: jpeg-build png-build freetype-build flux
+
 # JPEG
 jpeg-tar-url=$(JPEG_URL)
 TAR_PROJECTS += jpeg
@@ -48,3 +56,36 @@ freetype:
 
 
 freetype-clean: freetype-archive-clean
+
+# Flux
+flux-git-repo=$(FLUX_URL)
+GIT_PROJECTS += flux
+
+flux-build: flux $(TOOLS_DIR)
+	cd $(SOURCES_DIR)/flux-git
+	./configure --prefix=$(TOOLS_DIR) && make && make install
+
+# DirectFB
+directfb-git-repo=$(DFB_URL)
+GIT_PROJECTS += directfb
+
+directfb-build: directfb dfb-deps
+	cp $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
+	cd $(SOURCES_DIR)/directfb-git/; ./builder.sh --sysroot $(FILESYSTEM_ROOT)
+
+directfb:
+	@echo "Getting directfb"
+
+# DirectFB examples 1.7
+directfb-examples-tar-url=$(DIRECTFB_EXAMPLES_URL)
+TAR_PROJECTS += directfb-examples
+
+directfb-examples-build: directfb-lazy
+	cd $(SOURCES_DIR)/directfb-examples-archive/*/; mkdir -p objs/;  cd objs/; \
+	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig"; \
+	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
+	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/"; \
+	make install
+
+directfb-examples:
+	@echo "Getting directfb-examples"

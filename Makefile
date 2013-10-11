@@ -7,6 +7,7 @@ SOURCES_DIR=$(ROOT_DIR)/sources
 RESOURCES_DIR=$(ROOT_DIR)/resources
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
+LAZY_DIR=$(ROOT_DIR)/lazy
 
 GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
@@ -19,7 +20,7 @@ force: ;
 board-ready: linux-build ramdisk-board uboot-build sdk
 
 # Targets
-DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR)
+DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR)
 $(DIRECTORIES):
 	[ $@ ] || mkdir $@
 
@@ -205,3 +206,16 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 
 %-archive-clean:
 	rm -rf $(SOURCES_DIR)/$*-archive $(DRAFTS_DIR)/$*.tar.gz
+
+# Lazies
+#
+# So that we do not configure everything over and over, I touch
+# something in lazy/ and you want to remove it to run lazy
+# dependencies.
+.SECONDEXPANSION:
+$(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
+	touch $@
+
+.SECONDEXPANSION:
+%-lazy: $(LAZY_DIR)/$$*
+	echo "Lazy $@, createing $(LAZY_DIR)/$*"
