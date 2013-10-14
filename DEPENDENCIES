@@ -15,8 +15,14 @@ Here are some things i had to do systemwide to run this.
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
   <remove-project name="platform/external/srec" />
-  <remove-project name="platform/external/v8" />
   <remove-project name="platform/external/yaffs2" />
 </manifest>
 
 #+END_EXAMPLE
+
+  - Add `this->` wherever needed in v8 and #include <cstring> in v8 globals.h
+  - install gperf
+  - install switch-perl library
+  - http://trac.webkit.org/changeset/84123/trunk/Source/WebCore/dom/make_names.pl
+    Found this in line 50 of make_names.pl
+  - install genext2fs

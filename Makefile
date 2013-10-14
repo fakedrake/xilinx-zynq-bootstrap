@@ -22,7 +22,7 @@ board-ready: linux-build ramdisk-board uboot-build sdk
 # Targets
 DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR)
 $(DIRECTORIES):
-	[ $@ ] || mkdir $@
+	[ -d $@ ] || mkdir $@
 
 # GNU Tools
 GNU_TOOLS=$(SOURCES_DIR)/gnu-tools-archive/$(GNU_TOOLS_DIR)
@@ -49,7 +49,7 @@ uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 
 $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
-	cd $(SOURCES_DIR)/uboot-git ; \
+	cd $(SOURCES_DIR)/uboot-git0 ; \
 	make zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
 	make  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
@@ -86,7 +86,7 @@ busybox-build: busybox $(FS_DIRS) gnu-tools
 FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
 
 $(FS_DIRS):
-	mkdir $@
+	[[ ! -d $@ ]] && mkdir -p $@
 
 filesystem-nossh: $(FS_DIRS) busybox-build
 	@echo "Building filesystem"

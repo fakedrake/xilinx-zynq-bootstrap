@@ -9,14 +9,14 @@ ROOT_DIRS=lib/modules tmp media
 .PHONY: dummy
 
 $(ROOT_IMG): dummy
-        rm -rf $@
-        sudo rm -rf $(ROOTFS)
-        cp -r $(OUT_DIR)/root $(ROOTFS)
-        cp -r $(OUT_DIR)/system $(ROOTFS)
-        cd $(ROOTFS) && mkdir -p $(ROOT_DIRS)
-        sudo chown -R root:root $(ROOTFS)
-        sudo genext2fs -d $(ROOTFS) -b $$((80*1024)) -m 0 -N $$((64*1024)) $(ROOT_IMG)
-        sudo chown $(shell id -u):$(shell id -g) $(ROOT_IMG)
+	rm -rf $@
+	sudo rm -rf $(ROOTFS)
+	cp -r $(OUT_DIR)/root $(ROOTFS)
+	cp -r $(OUT_DIR)/system $(ROOTFS)
+	cd $(ROOTFS) && mkdir -p $(ROOT_DIRS)
+	sudo chown -R root:root $(ROOTFS)
+	sudo genext2fs -d $(ROOTFS) -b $$((80*1024)) -m 0 -N $$((64*1024)) $(ROOT_IMG)
+	sudo chown $(shell id -u):$(shell id -g) $(ROOT_IMG)
 
 # Phony target forces the rootfs image file to be rebuilt on each make
 dummy:
