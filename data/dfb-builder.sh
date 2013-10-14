@@ -13,11 +13,16 @@ HELP_MESSAGE="--no-think2d will build without think2d support."
 JUST="none"
 
 while [[ $# -gt 0 ]]; do
-    case $1 in
-	"--no-think2d") CONFIGURE_THINK2D=""; shift;;
-	"--just") shift; JUST="$JUST:$1"; shift;;
-	"--make-args") MAKE_ARGS="$1"; shift;;
-	"--sysroot") shift; TARGET_FS="$1"; shift;;
+    case "$1" in
+	"--sysroot")
+	    shift;
+	    TARGET_FS="$1";;
+	"--disable-think2d")
+	    CONFIGURE_THINK2D="";;
+	"--enable-think2d")
+	    CONFIGURE_THINK2D="--with-gfxdrivers=think2d";;
+	"--just") shift; JUST="$JUST:$1";;
+	"--make-args") MAKE_ARGS="$1";;
 	"--help")
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
@@ -70,6 +75,8 @@ done
 [ -d $BUILD_DIR ] || ( mkdir $BUILD_DIR || fail "Making builddir" )
 
 echo "CWD: $BUILD_DIR"
+echo "Config params: $CONFIG_ARGS"
+
 if should_do "autogen"; then
     $SOURCE_DIR/autogen.sh $CONFIG_ARGS || fail "Autogening"
 fi
