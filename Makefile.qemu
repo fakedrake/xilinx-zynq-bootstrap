@@ -1,0 +1,15 @@
+
+qemu-git-repo=git@github.com:Xilinx/qemu
+GIT_PROJECTS += qemu
+
+qemu-build: $(TOOLS_DIR)/bin/qemu-system-arm
+
+$(TOOLS_DIR)/bin/qemu-system-arm: qemu $(TOOLS_DIR)/python
+	cd $(SOURCES_DIR)/qemu-git; \
+	git submodule --update dtc; \
+	./configure --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python && make -j4 && make install
+
+ramdisk-qemu: $(RESOURCES_DIR)/ramdisk.img.gz
+
+.PHONY: qemu-ready
+qemu-ready: linux-build ramdisk-qemu qemu-build

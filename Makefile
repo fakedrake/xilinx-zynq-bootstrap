@@ -117,7 +117,7 @@ filesystem-clean:
 
 ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
-ramdisk-qemu: $(RESOURCES_DIR)/ramdisk.img.gz
+
 
 $(RESOURCES_DIR)/ramdisk.img: filesystem resources | $(DRAFTS_DIR)
 	@echo "Building ramdisk..."
@@ -151,6 +151,7 @@ $(RESOURCES_DIR)/%.tcl :
 include ./Makefile.ssh.def
 include ./Makefile.android
 include ./Makefile.dfb
+include ./Makefile.qemu
 
 show-projects:
 	@echo "Git Projects: $(GIT_PROJECTS)"
