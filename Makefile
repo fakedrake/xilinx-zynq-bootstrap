@@ -94,9 +94,12 @@ filesystem-nossh: $(FS_DIRS) busybox-build
 	cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/
 	cp -R $(GNU_TOOLS_UTILS)/libc/usr/* $(FILESYSTEM_ROOT)/usr/
 
+# Strip debug symbols
+ifneq ($(DEBUG_LIBS),y)
 	for i in $(FILESYSTEM_ROOT)/lib/*; do \
 		if ([ -f "$$i" ] && [ ! "`file -b $$i`" = "ASCII text" ]); then $(GNU_TOOLS_PREFIX)strip $$i; fi; \
 	done
+endif
 
 	cp $(DATA_DIR)/fstab $(FILESYSTEM_ROOT)/etc/fstab
 	cp $(DATA_DIR)/inittab $(FILESYSTEM_ROOT)/etc/inittab
