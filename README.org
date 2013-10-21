@@ -19,3 +19,15 @@
 ** Debug
    You may run =debug.sh <program-in-bin>= to debug something running
    on the board's gdbserver.
+
+   From the board look for =dbi.sh <program to debug>= if you cant
+   bother to look into gdb server.
+
+** Lazy
+   The problem when a makefile compiles a couple of other projects is
+   that =./configure= will always run and may take quite some time
+   when phony targets are being run. So each target
+   =target-name-build= has an enquivalent =target-name-lazy= which
+   will run =target-name-build= if there is not token file in =lazy/=
+   and then create such a file. This way we can avoid configuring
+   things like =libjpeg= again and again.

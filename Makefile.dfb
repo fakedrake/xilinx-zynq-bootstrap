@@ -16,9 +16,9 @@ TAR_PROJECTS += jpeg
 
 jpeg-build: jpeg
 	cd $(SOURCES_DIR)/jpeg-archive/*/; \
-	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc"; \
-	make ;\
-	make install DESTDIR=$(FILESYSTEM_ROOT)
+	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc" --prefix="$(FILESYSTEM_ROOT)" && \
+	make && \
+	make install
 
 jpeg:
 	@echo "Getting libjpeg"
