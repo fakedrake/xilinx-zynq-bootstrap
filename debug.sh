@@ -9,10 +9,11 @@ SYSROOT=/home/fakedrake/Projects/ThinkSilicon/xilinx-zynq-bootstrap/fs
 
 echo "set sysroot $SYSROOT
 file $SYSROOT/bin/$DFB_EX
-target remote $BOARD_IP:1234" >> $CMD_FILE
+target remote $BOARD_IP:1234" > $CMD_FILE
 
 echo "SYSROOT: $SYSROOT
-BOARD_IP: $BOARD_IP"
+BOARD_IP: $BOARD_IP
+DEBUG FILE: $(cat $CMD_FILE)"
 
 
 $GDB -x $CMD_FILE

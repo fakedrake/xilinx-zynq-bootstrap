@@ -1,0 +1,21 @@
+* Usage
+** DirectFB
+   To build everything run
+
+   #+BEGIN_EXAMPLE
+   make dfb-all
+   #+END_EXAMPLE
+
+** Nfsroot
+   For now we do not have proper nfsroot but there is a script you can
+   run to get root at your fs.
+
+   #+BEGIN_EXAMPLE
+   /homes/zynqfs/init.sh
+   #+END_EXAMPLE
+
+   That will run the init scripts as expected.
+
+** Debug
+   You may run =debug.sh <program-in-bin>= to debug something running
+   on the board's gdbserver.

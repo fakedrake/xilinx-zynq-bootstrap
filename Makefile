@@ -225,3 +225,6 @@ $(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
 .SECONDEXPANSION:
 %-lazy: $(LAZY_DIR)/$$*
 	echo "Lazy $@, createing $(LAZY_DIR)/$*"
+
+lazy-clean:
+	rm -rf $(LAZY_DIR)
