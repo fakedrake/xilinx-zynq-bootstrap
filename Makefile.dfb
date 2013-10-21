@@ -74,7 +74,7 @@ GIT_PROJECTS += directfb
 directfb-build: directfb dfb-deps
 	[[ -L $(SOURCES_DIR)/directfb-git/builder.sh ]] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
 	cd $(SOURCES_DIR)/directfb-git/; \
-	./builder.sh --sysroot $(FILESYSTEM_ROOT) --disable-think2d
+	./builder.sh --sysroot $(FILESYSTEM_ROOT) --disable-think2d --enable-debug
 
 directfb:
 	@echo "Getting directfb"
@@ -83,12 +83,19 @@ directfb:
 directfb-examples-tar-url=$(DIRECTFB_EXAMPLES_URL)
 TAR_PROJECTS += directfb-examples
 
+
+
 directfb-examples-build: directfb-examples directfb-lazy
 	cd $(SOURCES_DIR)/directfb-examples-archive/*/; mkdir -p objs/;  cd objs/; \
-	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig"; \
+	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/ --sysroot='$(FILESYSTEM_ROOT)'" LDFLAGS="--sysroot='$(FILESYSTEM_ROOT)'" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig" --enable-debug; \
 	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
-	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/"; \
+	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/ -g --sysroot='$(FILESYSTEM_ROOT)'" LDFLAGS="--sysroot='$(FILESYSTEM_ROOT)'"; \
 	make install
+
+directfb-examples-clean:
+	cd $(SOURCES_DIR)/directfb-examples-archive/*/;  cd objs/; \
+	make distclean; \
+	rm -rf $(LAZY_DIR)/directfb-examples
 
 directfb-examples:
 	@echo "Getting directfb-examples"

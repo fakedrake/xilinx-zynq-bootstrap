@@ -17,6 +17,10 @@ while [[ $# -gt 0 ]]; do
 	"--sysroot")
 	    shift;
 	    TARGET_FS="$1";;
+	"--disable-debugging")
+	    DEBUGGING="--disable-debug";;
+	"--enable-debug")
+	    DEBUGGING="--enable-debug";;
 	"--disable-think2d")
 	    CONFIGURE_THINK2D="";;
 	"--enable-think2d")
@@ -58,13 +62,14 @@ export CC=$FD_TARGET_PATH-gcc
 export CCLD=$FD_TARGET_PATH-ld
 export CPP=$FD_TARGET_PATH-cpp
 export CXX=$FD_TARGET_PATH-g++
-export _LDFLAGS="-L${TARGET_FS}/lib -L${TARGET_FS}/usr/lib -L${TARGET_FS}/usr/local/lib/"
+export _LDFLAGS="-L${TARGET_FS}/lib -L${TARGET_FS}/usr/lib -L${TARGET_FS}/usr/local/lib/ --sysroot=${TARGET_FS}"
 export LIBS='-ljpeg -lpthread -lz -lpng'
-export CPPFLAGS="-I${TARGET_FS}/usr/include -I${TARGET_FS}/include -I${TARGET_FS}/usr/include"
-export CFLAGS="$_LDFLAGS"
+export CPPFLAGS="-I${TARGET_FS}/usr/include -I${TARGET_FS}/include -I${TARGET_FS}/usr/include -g"
+export CFLAGS="$_LDFLAGS -g"
+export LDFLAGS="$_LDFLAGS"
 export PKG_CONFIG_PATH="${TARGET_FS}/usr/lib/pkgconfig"
 
-CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-x11 --disable-wayland --with-sysroot=${TARGET_FS} --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp"
+CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes"
 
 echo "Check my config."
 for e in $CC $CPP $CXX ; do

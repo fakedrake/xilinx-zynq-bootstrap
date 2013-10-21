@@ -9,6 +9,8 @@ DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
 LAZY_DIR=$(ROOT_DIR)/lazy
 
+DEBUG_LIBS=y
+
 GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
 GNU_TOOLS_DIR=GNU_Tools/
