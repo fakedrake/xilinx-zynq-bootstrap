@@ -16,4 +16,4 @@ BOARD_IP: $BOARD_IP
 DEBUG FILE: $(cat $CMD_FILE)"
 
 
-$GDB -x $CMD_FILE
+$GDB --fullname -x $CMD_FILE
