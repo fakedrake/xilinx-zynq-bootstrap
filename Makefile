@@ -51,7 +51,7 @@ uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 
 $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
-	cd $(SOURCES_DIR)/uboot-git0 ; \
+	cd $(SOURCES_DIR)/uboot-git ; \
 	make zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
 	make  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
@@ -157,6 +157,7 @@ include ./Makefile.ssh.def
 include ./Makefile.android
 include ./Makefile.dfb
 include ./Makefile.qemu
+include ./Makefile.tsi
 
 show-projects:
 	@echo "Git Projects: $(GIT_PROJECTS)"

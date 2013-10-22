@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
 	"--enable-think2d")
 	    CONFIGURE_THINK2D="--with-gfxdrivers=think2d";;
 	"--just") shift; JUST="$JUST:$1";;
-	"--make-args") MAKE_ARGS="$1";;
+	"--make-args") shift; MAKE_ARGS="$1";;
 	"--help")
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
@@ -93,7 +93,7 @@ if should_do "config"; then
 fi
 
 if should_do "compile"; then
-    make $MAKE_ARGS || fail "Compilation"
+    make exec_prefix="/usr" $MAKE_ARGS || fail "Compilation"
 fi
 
 if should_do "install"; then

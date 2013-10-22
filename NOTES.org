@@ -62,3 +62,21 @@
    Check [[http://www.wiki.xilinx.com/Android%2BOn%2BZynq%2BGetting%2BStarted%2BGuide][the android xilinx wiki]] for more details
 
 *** TODO Booting binary
+** DirectFB
+   I already have directfb compiling for arm with our very own
+   hardware.
+
+*** Tsi Drivers
+
+**** DONE Thinklcdml
+     Integrated.
+
+**** TODO Think2d
+     Compiles fine with the new kernel. I will need to test it with
+     dfb.
+
+*** Directfb
+
+**** TODO Weird ioctl
+     Directfb throws some weird ioctls that my driver cannot handle, I
+     will need to investigate that.

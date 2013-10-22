@@ -31,3 +31,6 @@
    will run =target-name-build= if there is not token file in =lazy/=
    and then create such a file. This way we can avoid configuring
    things like =libjpeg= again and again.
+
+* Notes
+  MODULEDIR is absolute for host.
