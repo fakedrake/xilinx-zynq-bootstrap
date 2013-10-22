@@ -10,7 +10,7 @@ thinklcdml-build: $(TLCDML_MODULE)
 $(TLCDML_MODULE): linux-build thinklcdml
 	cd $(SOURCES_DIR)/thinklcdml-git && \
 	./builder.sh --linux $(SOURCES_DIR)/linux-git
-	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(FILESYSTEM_ROOT)
+	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
 
 
 # Think2D
@@ -23,6 +23,6 @@ think2d-build: $(T2D_MODULE)
 $(T2D_MODULE): linux-build thinklcdml-build think2d
 	cd sources/think2d-git && \
 	./builder.sh --root $(SOURCES_DIR)/../
-	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(FILESYSTEM_ROOT)
+	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
 
 tsi-drivers: think2d-build thinklcdml-build

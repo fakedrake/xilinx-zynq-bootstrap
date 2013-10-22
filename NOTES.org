@@ -80,3 +80,7 @@
 **** TODO Weird ioctl
      Directfb throws some weird ioctls that my driver cannot handle, I
      will need to investigate that.
+
+**** Loading of drivers
+     Drivers are loaded in a quite dumb way. Override that one and
+     make a new one.
