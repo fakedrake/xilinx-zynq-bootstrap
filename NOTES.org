@@ -82,5 +82,9 @@
      will need to investigate that.
 
 **** Loading of drivers
-     Drivers are loaded in a quite dumb way. Override that one and
-     make a new one.
+     Drivers are loaded in a quite dumb (static) way. Override that
+     one and make a new one. The real problem with this is that for
+     every change on a driver one has to load it to the sd card. what
+     we need here is to move all logic from the sd card to nfs. rcS
+     should do the bare basics as it does and then give control to a
+     script on nfs (not another script on the sd)

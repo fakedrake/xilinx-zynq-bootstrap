@@ -1,9 +1,10 @@
+MODULES_DIR=$(FILESYSTEM_ROOT)/lib/modules/3.9.0/
 PATH:=$(PATH):$(GNU_TOOLS_BIN)
 
 # ThinkLCDML
 thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
 GIT_PROJECTS += thinklcdml
-TLCDML_MODULE=$(FILESYSTEM_ROOT)/thinklcdml.ko
+TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
 
 thinklcdml-build: $(TLCDML_MODULE)
 
@@ -11,12 +12,12 @@ $(TLCDML_MODULE): linux-build thinklcdml
 	cd $(SOURCES_DIR)/thinklcdml-git && \
 	./builder.sh --linux $(SOURCES_DIR)/linux-git
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
-
+	cat $(MODULES_DIR)/modules.dep.bb | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep.bb
 
 # Think2D
 think2d-git-repo="git@github.com:fakedrake/Think2D"
 GIT_PROJECTS += think2d
-T2D_MODULE=$(FILESYSTEM_ROOT)/think2d.ko
+T2D_MODULE=$(MODULES_DIR)/think2d.ko
 
 think2d-build: $(T2D_MODULE)
 
@@ -24,5 +25,6 @@ $(T2D_MODULE): linux-build thinklcdml-build think2d
 	cd sources/think2d-git && \
 	./builder.sh --root $(SOURCES_DIR)/../
 	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
+	cat $(MODULES_DIR)/modules.dep.bb | grep think2d.ko || echo "thinkl2d.ko" >> $(MODULES_DIR)/modules.dep.bb
 
 tsi-drivers: think2d-build thinklcdml-build

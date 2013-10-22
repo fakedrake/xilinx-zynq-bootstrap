@@ -32,5 +32,29 @@
    and then create such a file. This way we can avoid configuring
    things like =libjpeg= again and again.
 
+** Hardware
+*** SD Card usage
+    To use the sd card loaded stuff the switches must be:
+
+    |    1 |    2 |  3 |  4 |    5 |
+    |------+------+----+----+------|
+    | Down | Down | Up | Up | Down |
+
+*** JTAG usage
+    To load linux from the jtag you must have all switches down
+
+    |    1 |    2 |    3 |    4 |    5 |
+    |------+------+------+------+------|
+    | Down | Down | Down | Down | Down |
+
+    For ZC702 you also need to setup SW10
+
+    | JTAG Mode             | Switch 0 | Switch 1 |
+    |-----------------------+----------+----------|
+    | Invalid               | off      | off      |
+    | Digilent USB JTAG     | off      | on       |
+    | Xilinx Platform Cable | on       | off      |
+    | 20-pin Header         | off      | off      |
+
 * Notes
   MODULEDIR is absolute for host.
