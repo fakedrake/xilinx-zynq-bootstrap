@@ -39,7 +39,7 @@ to correct your xmd executable aswell
 
 EOF
 
-XILINX_BIN_PATH=/opt/Xilinx/14.4/ISE_DS/EDK/bin/lin
+XILINX_BIN_PATH=/orange-opt/Xilinx/14.4/ISE_DS/EDK/bin/lin
 XILINX_BIN_PATH64=${XILINX_BIN_PATH}64
 
 LOG_FILE="load-linux.log"

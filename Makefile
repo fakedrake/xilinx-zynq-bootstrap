@@ -56,7 +56,7 @@ $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	make  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
-linux-git-repo=git://git.xilinx.com/linux-xlnx.git
+linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
 GIT_PROJECTS += linux
 
 DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
