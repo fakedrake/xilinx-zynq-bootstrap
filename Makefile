@@ -90,7 +90,11 @@ FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FIL
 $(FS_DIRS):
 	[[ ! -d $@ ]] && mkdir -p $@
 
-filesystem-nossh: $(FS_DIRS) busybox-build
+$(FILESYSTEM_ROOT)/init.sh:
+	cp $(DATA_DIR)/fdinit.sh $@
+	chmod a+x $@
+
+filesystem-nossh: $(FS_DIRS) $(FILESYSTEM_ROOT)/init.sh busybox-build
 	@echo "Building filesystem"
 	cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/
 	cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/

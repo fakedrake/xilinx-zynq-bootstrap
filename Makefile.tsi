@@ -15,7 +15,7 @@ $(TLCDML_MODULE): linux-build thinklcdml
 	cat $(MODULES_DIR)/modules.dep.bb | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep.bb
 
 thinklcdml-clean:
-	rm -rf $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
+	cd $(SOURCES_DIR)/thinklcdml-git && make clean
 
 # Think2D
 think2d-git-repo="git@github.com:fakedrake/Think2D"
@@ -25,13 +25,13 @@ T2D_MODULE=$(MODULES_DIR)/think2d.ko
 think2d-build: $(T2D_MODULE)
 
 $(T2D_MODULE): linux-build thinklcdml-build think2d
-	cd sources/think2d-git && \
+	cd $(SOURCES_DIR)/think2d-git && \
 	./builder.sh --root $(SOURCES_DIR)/../
 	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
 	cat $(MODULES_DIR)/modules.dep.bb | grep think2d.ko || echo "thinkl2d.ko" >> $(MODULES_DIR)/modules.dep.bb
 
 think2d-clean:
-	rm -rf $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
+	cd $(SOURCES_DIR)/think2d-git && make clean
 
 tsi-drivers: think2d-build thinklcdml-build
 tsi-drivers-clear: think2d-clean thinklcdml-clean
