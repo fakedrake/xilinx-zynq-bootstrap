@@ -74,7 +74,7 @@ GIT_PROJECTS += directfb
 directfb-build: directfb dfb-deps
 	[[ -L $(SOURCES_DIR)/directfb-git/builder.sh ]] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
 	cd $(SOURCES_DIR)/directfb-git/; \
-	./builder.sh --sysroot $(FILESYSTEM_ROOT) --disable-think2d --enable-debug
+	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug
 
 directfb:
 	@echo "Getting directfb"

@@ -36,17 +36,15 @@ think2d-clean:
 ioctler-git-repo="git@github.com:fakedrake/ioctler"
 GIT_PROJECTS += ioctler
 
-ioctler-build: ioctler $(FILESYSTEM_ROOT)/bin/ioctler
-
-$(FILESYSTEM_ROOT)/bin/ioctler:
-	cd $(SOURCES_DIR)/ioctler; \
-	make CC=$(CROSS_COMPILE)gcc &&	\
+ioctler-build: ioctler
+	cd $(SOURCES_DIR)/ioctler-git; \
+	make CC=$(CROSS_COMPILE)gcc DEBUG=y &&	\
 	make install FS_ROOT=$(FILESYSTEM_ROOT)
 
 ioctler-clean:
-	cd $(SOURCES_DIR)/ioctler; \
+	cd $(SOURCES_DIR)/ioctler-git; \
 	make clean; \
 	make uninstall FS_ROOT=$(FILESYSTEM_ROOT)
 
-tsi-drivers: think2d-build thinklcdml-build ioctler
+tsi-drivers: think2d-build thinklcdml-build ioctler-build
 tsi-drivers-clear: think2d-clean thinklcdml-clean ioctler-clean

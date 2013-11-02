@@ -2,8 +2,9 @@
 
 GDB=/home/fakedrake/Projects/ThinkSilicon/xilinx-zynq-bootstrap/sources/gnu-tools-archive/GNU_Tools/bin/arm-xilinx-linux-gnueabi-gdb
 
+EXT_IP=$2
 CMD_FILE=/tmp/commands.gdb
-BOARD_IP=192.168.1.104
+BOARD_IP=${EXT_IP:-192.168.1.107}
 DFB_EX=$1
 SYSROOT=/home/fakedrake/Projects/ThinkSilicon/xilinx-zynq-bootstrap/fs
 

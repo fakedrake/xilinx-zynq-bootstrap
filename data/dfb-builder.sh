@@ -69,7 +69,7 @@ export CFLAGS="$_LDFLAGS -g"
 export LDFLAGS="$_LDFLAGS"
 export PKG_CONFIG_PATH="${TARGET_FS}/usr/lib/pkgconfig"
 
-CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes"
+CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-linotype --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes"
 
 echo "Check my config."
 for e in $CC $CPP $CXX ; do
