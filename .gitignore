@@ -1,0 +1,11 @@
+GNU_Tools/
+bootstrap.log
+data/
+drafts/
+fs/
+lazy/
+linux-xlnx/
+load-linux.log
+resources/
+sources/
+tools/
