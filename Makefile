@@ -8,12 +8,13 @@ RESOURCES_DIR=$(ROOT_DIR)/resources
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
 LAZY_DIR=$(ROOT_DIR)/lazy
+MODULES_DIR=$(FILESYSTEM_ROOT)/lib/modules/3.9.0-xilinx/
 
 DEBUG_LIBS=y
 
 GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
-GNU_TOOLS_DIR=GNU_Tools/
+GNU_TOOLS_DIR=GNU_Tools
 
 FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
@@ -22,9 +23,9 @@ force: ;
 board-ready: linux-build ramdisk-board uboot-build sdk
 
 # Targets
-DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR)
+DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(MODULES_DIR)
 $(DIRECTORIES):
-	[ -d $@ ] || mkdir $@
+	[ -d $@ ] || mkdir -p $@
 
 # GNU Tools
 GNU_TOOLS=$(SOURCES_DIR)/gnu-tools-archive/$(GNU_TOOLS_DIR)
@@ -57,17 +58,18 @@ $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
 linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
+linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
 GIT_PROJECTS += linux
 
 DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702.dts
 
-linux-build: linux $(RESOURCES_DIR)/uImage $(DTB_TREE)
+linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
 
 $(DTB_TREE):
 	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
 
-$(RESOURCES_DIR)/uImage: uboot-build gnu-tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/uImage: linux uboot-build gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	cd $(SOURCES_DIR)/linux-git; \
 	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
@@ -88,7 +90,7 @@ busybox-build: busybox $(FS_DIRS) gnu-tools
 FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
 
 $(FS_DIRS):
-	[[ ! -d $@ ]] && mkdir -p $@
+	[ ! -d $@ ] && mkdir -p $@ || echo "$@ is there!"
 
 $(FILESYSTEM_ROOT)/init.sh:
 	cp $(DATA_DIR)/fdinit.sh $@
@@ -172,7 +174,10 @@ show-projects:
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 
 $(SOURCES_DIR)/%-git : force
-	[ -d $@ ] || git clone $($*-git-repo) $@
+	if [ ! -d $@ ] || "$(force-$*-clone)" then; \
+		git clone $($*-git-repo) $@ \
+		if [ "$($*-git-commit)" != "" ] then; git checkout $($*-git-commit); fi \
+	fi
 	@cd $@ && git pull
 
 %-git-purge:
