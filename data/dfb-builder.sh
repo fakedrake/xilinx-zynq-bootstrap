@@ -1,19 +1,21 @@
+#!/bin/bash
 CONFIGURE_THINK2D="--with-gfxdrivers=think2d"
 
 # BIN_PATH=~/x-tools/sparc-unknown-linux-gnu/bin/
 # FD_TARGET=sparc-unknown-linux-gnu
-TARGET_FS="$HOME/Projects/ThinkSilicon/xilinx-zynq-bootstrap/fs/"
-BIN_PATH=~/Projects/ThinkSilicon/xilinx-zynq-bootstrap/sources/gnu-tools-archive/GNU_Tools/bin/
 FD_TARGET=arm-xilinx-linux-gnueabi
 
 SOURCE_DIR=`pwd`
 BUILD_DIR=.
-
+BOOTSTRAP_ROOT=~/Projects/ThinkSilicon/xilinx-zynq-bootstrap/
 HELP_MESSAGE="--no-think2d will build without think2d support."
 JUST="none"
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
     case "$1" in
+	"--bsroot")
+	    shift;
+	    BOOTSTRAP_ROOT="$1";;
 	"--sysroot")
 	    shift;
 	    TARGET_FS="$1";;
@@ -36,6 +38,9 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+TARGET_FS=$BOOTSTRAP_ROOT/fs
+BIN_PATH=$BOOTSTRAP_ROOT/sources/gnu-tools-archive/GNU_Tools/bin
 FD_TARGET_PATH=$BIN_PATH/$FD_TARGET
 
 if [[ $JUST = "none" ]]; then
@@ -69,7 +74,7 @@ export CFLAGS="$_LDFLAGS -g"
 export LDFLAGS="$_LDFLAGS"
 export PKG_CONFIG_PATH="${TARGET_FS}/usr/lib/pkgconfig"
 
-CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-linotype --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes"
+CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-linotype --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes --disable-freetype"
 
 echo "Check my config."
 for e in $CC $CPP $CXX ; do

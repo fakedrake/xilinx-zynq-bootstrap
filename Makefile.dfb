@@ -1,6 +1,6 @@
 JPEG_URL="http://www.ijg.org/files/jpegsrc.v9.tar.gz"
-PNG_URL="ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.6.tar.gz"
-FREETYPE_URL="http://download.savannah.gnu.org/releases/freetype/freetype-2.4.12.tar.gz"
+PNG_URL=ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.7.tar.gz
+FREETYPE_URL=http://download.savannah.gnu.org/releases/freetype/freetype-2.5.0.tar.gz
 
 # FLUX_URL=~/Projects/ThinkSilicon/DFB/flux/
 # DFB_URL=~/Projects/ThinkSilicon/DFB/dfb-mainline/
@@ -14,7 +14,7 @@ dfb-deps: jpeg-build png-build freetype-build flux-build #filesystem
 jpeg-tar-url=$(JPEG_URL)
 TAR_PROJECTS += jpeg
 
-jpeg-build: jpeg
+jpeg-build: jpeg gnu-tools
 	cd $(SOURCES_DIR)/jpeg-archive/*/; \
 	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc" --prefix="$(FILESYSTEM_ROOT)" && \
 	make && \
@@ -29,11 +29,11 @@ jpeg-clean: jpeg-archive-clean
 png-tar-url=$(PNG_URL)
 TAR_PROJECTS += png
 
-png-build: png zlib-build
-	cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/; \
+png-build: png zlib-build gnu-tools
+	cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/ && \
 	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib/"; \
 	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
-	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/"; \
+	make LDFLAGS=" -L/homes/cperivol/Projects/xilinx-zynq-bootstrap/fs/lib/" && \
 	make install
 
 png:
@@ -44,10 +44,10 @@ png:
 freetype-tar-url=$(FREETYPE_URL)
 TAR_PROJECTS += freetype
 
-freetype-build: freetype zlib-build
-	cd $(SOURCES_DIR)/freetype-archive/*/; mkdir -p objs/;  cd objs/; \
-	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
-	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/" && \
+freetype-build: freetype zlib-build gnu-tools
+	cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh \
+	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
+	echo "[CONFIGURED]  $(LDFLAGS)" && \
 	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" && \
 	make install
 
@@ -70,11 +70,12 @@ flux-build: flux $(TOOLS_DIR)
 # DirectFB
 directfb-git-repo=$(DFB_URL)
 GIT_PROJECTS += directfb
+PATH:=$(PATH):$(TOOLS_DIR)/bin
 
-directfb-build: directfb dfb-deps
-	[[ -L $(SOURCES_DIR)/directfb-git/builder.sh ]] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
+directfb-build: directfb dfb-deps gnu-tools
+	[ -f $(SOURCES_DIR)/directfb-git/builder.sh ] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
 	cd $(SOURCES_DIR)/directfb-git/; \
-	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug
+	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug --bsroot $(ROOT_DIR) --disable-think2d
 
 directfb:
 	@echo "Getting directfb"

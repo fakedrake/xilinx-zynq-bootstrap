@@ -11,7 +11,7 @@ $(TLCDML_MODULE): linux-build thinklcdml | $(MODULES_DIR)
 	cd $(SOURCES_DIR)/thinklcdml-git && \
 	./builder.sh --root $(SOURCES_DIR)/../
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
-	cat $(MODULES_DIR)/modules.dep.bb | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep.bb
+	cat $(MODULES_DIR)/modules.dep | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep
 
 thinklcdml-clean:
 	cd $(SOURCES_DIR)/thinklcdml-git && make clean
@@ -27,7 +27,7 @@ $(T2D_MODULE): linux-build thinklcdml-build think2d | $(MODULES_DIR)
 	cd $(SOURCES_DIR)/think2d-git && \
 	./builder.sh --root $(ROOT_DIR)
 	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
-	cat $(MODULES_DIR)/modules.dep.bb | grep think2d.ko || (echo "think2d.ko" >> $(MODULES_DIR)/modules.dep.bb)
+	cat $(MODULES_DIR)/modules.dep | grep think2d.ko || (echo "think2d.ko: thinklcdml.ko" >> $(MODULES_DIR)/modules.dep)
 
 think2d-clean:
 	cd $(SOURCES_DIR)/think2d-git && make clean
@@ -37,7 +37,7 @@ GIT_PROJECTS += ioctler
 
 ioctler-build: ioctler
 	cd $(SOURCES_DIR)/ioctler-git; \
-	make CC=$(CROSS_COMPILE)gcc DEBUG=y &&	\
+	make CC=$(CROSS_COMPILE)gcc &&	\
 	make install FS_ROOT=$(FILESYSTEM_ROOT)
 
 ioctler-clean:
