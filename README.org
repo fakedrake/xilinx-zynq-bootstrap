@@ -1,4 +1,11 @@
 * Usage
+** Cleanup
+   For archives you can run for exaple:
+   #+BEGIN_EXAMPLE
+   make libpng-clean-archive
+   #+END_EXAMPLE
+
+   To remove all traces of libpng (except from the filesystem)
 ** Threads
    To compile directfb with 4 threads do.
    #+BEGIN_EXAMPLE
@@ -38,6 +45,27 @@
    will run =target-name-build= if there is not token file in =lazy/=
    and then create such a file. This way we can avoid configuring
    things like =libjpeg= again and again.
+
+   For example:
+
+   #+BEGIN_EXAMPLE
+   make linux-lazy
+   #+END_EXAMPLE
+
+   will run =make linux-build= and then it will create a file. If we
+   try to run again =make linux-lazy= it will just skip it.
+
+   #+BEGIN_EXAMPLE
+   make linux-clean-lazy
+   #+END_EXAMPLE
+
+   cleans the created files by lazy
+
+   #+BEGIN_EXAMPLE
+   make all-clean-lazy
+   #+END_EXAMPLE
+
+   clears all laziness.
 
 ** Hardware
 *** SD Card usage

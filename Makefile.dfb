@@ -1,5 +1,5 @@
 JPEG_URL="http://www.ijg.org/files/jpegsrc.v9.tar.gz"
-PNG_URL=ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/libpng-1.6.7.tar.gz
+PNG_URL=ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng12/libpng-1.2.50.tar.gz
 FREETYPE_URL=http://download.savannah.gnu.org/releases/freetype/freetype-2.5.0.tar.gz
 
 # FLUX_URL=~/Projects/ThinkSilicon/DFB/flux/

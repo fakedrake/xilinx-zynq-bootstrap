@@ -223,7 +223,7 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 	mkdir $@
 	cd $@ && tar xvzf $(DRAFTS_DIR)/$*.tar.gz
 
-%-archive-clean:
+%-clean-archive:
 	rm -rf $(SOURCES_DIR)/$*-archive $(DRAFTS_DIR)/$*.tar.gz
 
 # Lazies
@@ -239,5 +239,8 @@ $(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
 %-lazy: $(LAZY_DIR)/$$*
 	echo "Lazy $@, createing $(LAZY_DIR)/$*"
 
-lazy-clean:
+%-clean-lazy:
+	rm -rf $(LAZY_DIR)/$*
+
+all-clean-lazy:
 	rm -rf $(LAZY_DIR)

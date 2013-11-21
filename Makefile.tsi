@@ -7,7 +7,7 @@ TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
 
 thinklcdml-build: $(TLCDML_MODULE)
 
-$(TLCDML_MODULE): linux-build thinklcdml | $(MODULES_DIR)
+$(TLCDML_MODULE): linux-lazy thinklcdml | $(MODULES_DIR)
 	cd $(SOURCES_DIR)/thinklcdml-git && \
 	./builder.sh --root $(SOURCES_DIR)/../
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
@@ -23,7 +23,7 @@ T2D_MODULE=$(MODULES_DIR)/think2d.ko
 
 think2d-build: $(T2D_MODULE)
 
-$(T2D_MODULE): linux-build thinklcdml-build think2d | $(MODULES_DIR)
+$(T2D_MODULE): linux-lazy thinklcdml-build think2d | $(MODULES_DIR)
 	cd $(SOURCES_DIR)/think2d-git && \
 	./builder.sh --root $(ROOT_DIR)
 	cp $(SOURCES_DIR)/think2d-git/think2d.ko $(T2D_MODULE)
