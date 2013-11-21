@@ -67,6 +67,15 @@
 
    clears all laziness.
 
+   If you are sure you have run =linux-build= or for any reason you
+   want to prevent a lazy from actually doing anything you can run.
+
+   #+BEGIN_EXAMPLE
+   make linux-shallow-lazy
+   #+END_EXAMPLE
+
+   to create the lazy file without building (again)
+
 ** Hardware
 *** SD Card usage
     To use the sd card loaded stuff the switches must be:

@@ -232,15 +232,17 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 # something in lazy/ and you want to remove it to run lazy
 # dependencies.
 .SECONDEXPANSION:
-$(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
+$(LAZY_DIR)/%: $(LAZY_DIR)
 	touch $@
 
 .SECONDEXPANSION:
-%-lazy: $(LAZY_DIR)/$$*
+%-lazy: $$*-build $(LAZY_DIR)/$$*
 	echo "Lazy $@, createing $(LAZY_DIR)/$*"
 
 %-clean-lazy:
-	rm -rf $(LAZY_DIR)/$*
+	rm -rf $(LAZY_DIR)/$*-lazy
+
+%-shallow-lazy: $(LAZY_DIR)/$$*
 
 all-clean-lazy:
 	rm -rf $(LAZY_DIR)
