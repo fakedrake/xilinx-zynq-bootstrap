@@ -8,7 +8,7 @@ DIRECTFB_EXAMPLES_URL=http://directfb.org/downloads/Extras/DirectFB-examples-1.7
 DFB_URL=git://git.directfb.org/git/directfb/core/DirectFB.git
 FLUX_URL=git://git.directfb.org/git/directfb/core/flux
 
-dfb-deps: jpeg-build png-build freetype-build flux-build #filesystem
+dfb-deps: jpeg-lazy png-lazy freetype-lazy flux-lazy #filesystem
 
 # JPEG
 jpeg-tar-url=$(JPEG_URL)
