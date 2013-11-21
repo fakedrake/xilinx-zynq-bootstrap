@@ -1,6 +1,6 @@
 # Definable
 
-MAKETHREADS=1
+MAKETHREADS=4
 MAKE=make -j$(MAKETHREADS)
 
 # My directories
@@ -239,10 +239,12 @@ $(LAZY_DIR)/%: $(LAZY_DIR)
 %-lazy: $$*-build $(LAZY_DIR)/$$*
 	echo "Lazy $@, createing $(LAZY_DIR)/$*"
 
-%-clean-lazy:
-	rm -rf $(LAZY_DIR)/$*-lazy
-
+.SECONDEXPANSION:
 %-shallow-lazy: $(LAZY_DIR)/$$*
+	echo "Avoiding build, just creating $^"
+
+%-clean-lazy:
+	rm -rf $(LAZY_DIR)/$*
 
 all-clean-lazy:
 	rm -rf $(LAZY_DIR)
