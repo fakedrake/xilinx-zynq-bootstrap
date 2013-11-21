@@ -17,8 +17,8 @@ TAR_PROJECTS += jpeg
 jpeg-build: jpeg gnu-tools
 	cd $(SOURCES_DIR)/jpeg-archive/*/; \
 	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc" --prefix="$(FILESYSTEM_ROOT)" && \
-	make && \
-	make install
+	$(MAKE) && \
+	$(MAKE) install
 
 jpeg:
 	@echo "Getting libjpeg"
@@ -33,8 +33,8 @@ png-build: png zlib-build gnu-tools
 	cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/ && \
 	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib/"; \
 	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
-	make LDFLAGS=" -L/homes/cperivol/Projects/xilinx-zynq-bootstrap/fs/lib/" && \
-	make install
+	$(MAKE) LDFLAGS=" -L/homes/cperivol/Projects/xilinx-zynq-bootstrap/fs/lib/" && \
+	$(MAKE) install
 
 png:
 	@echo "Getting libpng"
@@ -48,8 +48,8 @@ freetype-build: freetype zlib-build gnu-tools
 	cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh \
 	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
 	echo "[CONFIGURED]  $(LDFLAGS)" && \
-	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" && \
-	make install
+	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" && \
+	$(MAKE) install
 
 freetype:
 	@echo "Getting libfreetype"
@@ -65,7 +65,7 @@ export PATH:=$(PATH):$(TOOLS_DIR)/usr/bin
 flux-build: flux $(TOOLS_DIR)
 	cd $(SOURCES_DIR)/flux-git ; \
 	./autogen.sh --prefix=$(TOOLS_DIR) && \
-	./configure --prefix=$(TOOLS_DIR) && make && make install
+	./configure --prefix=$(TOOLS_DIR) && $(MAKE) && $(MAKE) install
 
 # DirectFB
 directfb-git-repo=$(DFB_URL)
@@ -89,12 +89,12 @@ TAR_PROJECTS += directfb-examples
 directfb-examples-build: directfb-examples directfb-lazy
 	cd $(SOURCES_DIR)/directfb-examples-archive/*/; mkdir -p objs/;  cd objs/; \
 	../configure --host=$(GNU_TOOLS_HOST)  CC="$(GNU_TOOLS_PREFIX)gcc" CFLAGS=" --sysroot='$(FILESYSTEM_ROOT) -L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/ -I$(FILESYSTEM_ROOT)/usr/include/ -I$(FILESYSTEM_ROOT)/include/" LDFLAGS="-L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/ --sysroot=$(FILESYSTEM_ROOT)" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig" --enable-debug && \
-	make CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/ -g --sysroot='$(FILESYSTEM_ROOT)'" LDFLAGS="--sysroot='$(FILESYSTEM_ROOT)'" && \
-	make install DESTDIR=$(FILESYSTEM_ROOT)
+	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/ -g --sysroot='$(FILESYSTEM_ROOT)'" LDFLAGS="--sysroot='$(FILESYSTEM_ROOT)'" && \
+	$(MAKE) install DESTDIR=$(FILESYSTEM_ROOT)
 
 directfb-examples-clean:
 	cd $(SOURCES_DIR)/directfb-examples-archive/*/;  cd objs/; \
-	make distclean; \
+	$(MAKE) distclean; \
 	rm -rf $(LAZY_DIR)/directfb-examples
 
 directfb-examples:

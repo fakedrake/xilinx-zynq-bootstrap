@@ -12,8 +12,8 @@ kernel-android-build: $(RESOURCES_DIR) kernel-android $(RESOURCES_DIR)/android-z
 
 $(RESOURCES_DIR)/android-zImage: gnu-tools
 	cd $(SOURCES_DIR)/kernel-android-git; \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_android_defconfig; \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) zImage
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_android_defconfig; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) zImage
 	cp $(SOURCES_DIR)/kernel-android-git/arch/arm/boot/zImage $(RESOURCES_DIR)/android-zImage
 
 $(ANDROID_DTB_TREE):
@@ -69,14 +69,14 @@ export CFLAGS
 # Will probably have to remove srec from repo
 $(ANDROID_ROOT_IMG): $(ANDROID_SOURCE)
 	cd $(ANDROID_SOURCE); \
-	. build/envsetup.sh && lunch generic-eng && make LOCAL_CFLAGS=-fpermissive
+	. build/envsetup.sh && lunch generic-eng && $(MAKE) LOCAL_CFLAGS=-fpermissive
 	mv $(DATA_DIR)/Makefile.zynq $(ANDROID_SOURCE)
-	cd $(ANDROID_SOURCE) && make -f Makefile.zynq
+	cd $(ANDROID_SOURCE) && $(MAKE) -f Makefile.zynq
 	cp $(ANDROID_SOURCE)/root.img $(ANDROID_ROOT_IMG)
 
 android-clean:
 	cd $(ANDROID_SOURCE); \
-	. build/envsetup.sh && lunch generic-eng && make clean
+	. build/envsetup.sh && lunch generic-eng && $(MAKE) clean
 
 .PHONY: android-all
 android-all: kernel-android-build android-build

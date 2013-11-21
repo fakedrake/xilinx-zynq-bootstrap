@@ -1,4 +1,11 @@
 * Usage
+** Threads
+   To compile directfb with 4 threads do.
+   #+BEGIN_EXAMPLE
+   make MAKETHREADS=4 dfb-all
+   #+END_EXAMPLE
+
+   This converts all calls to =make= into =make -j4=.
 ** DirectFB
    To build everything run
 

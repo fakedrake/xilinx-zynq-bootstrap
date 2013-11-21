@@ -1,5 +1,8 @@
 # Definable
 
+MAKETHREADS=1
+MAKE=make -j$(MAKETHREADS)
+
 # My directories
 ROOT_DIR=$(PWD)
 DATA_DIR=$(ROOT_DIR)/data
@@ -53,8 +56,8 @@ uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	cd $(SOURCES_DIR)/uboot-git ; \
-	make zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
-	make  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
+	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
+	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
 linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
@@ -72,8 +75,8 @@ $(DTB_TREE):
 $(RESOURCES_DIR)/uImage: linux uboot-build gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	cd $(SOURCES_DIR)/linux-git; \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 uImage; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 uImage; \
 	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/uImage $(RESOURCES_DIR)/uImage
 
 
@@ -84,8 +87,8 @@ GIT_PROJECTS += busybox
 busybox-build: busybox $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
 	cd $(SOURCES_DIR)/busybox-git; \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
-	make ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install
 
 FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
 
@@ -184,10 +187,10 @@ $(SOURCES_DIR)/%-git : force
 	rm -rf $(SOURCES_DIR)/$*-git
 
 %-clean:
-	cd $(SOURCES_DIR)/$*-git && make clean
+	cd $(SOURCES_DIR)/$*-git && $(MAKE) clean
 
 %-distclean:
-	cd $(SOURCES_DIR)/$*-git && make distclean
+	cd $(SOURCES_DIR)/$*-git && $(MAKE) distclean
 
 print-vars:
 	@echo "GNU_TOOLS_FTP=$(GNU_TOOLS_FTP)"
