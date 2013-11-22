@@ -21,6 +21,13 @@ GNU_TOOLS_DIR=GNU_Tools
 
 FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
+
+ifneq ($(REMOTE_SERVER),)
+remote-maybe=ssh $(REMOTE_SERVER) $1
+else
+remote-maybe=$1
+endif
+
 force: ;
 
 board-ready: linux-build ramdisk-board uboot-build sdk
@@ -232,16 +239,17 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 # something in lazy/ and you want to remove it to run lazy
 # dependencies.
 .SECONDEXPANSION:
-$(LAZY_DIR)/%: $(LAZY_DIR)
+$(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
 	touch $@
 
 .SECONDEXPANSION:
-%-lazy: $$*-build $(LAZY_DIR)/$$*
+%-lazy: $(LAZY_DIR)/$$*
 	echo "Lazy $@, createing $(LAZY_DIR)/$*"
 
 .SECONDEXPANSION:
-%-shallow-lazy: $(LAZY_DIR)/$$*
+%-shallow-lazy:
 	echo "Avoiding build, just creating $^"
+	touch $(LAZY_DIR)/$*
 
 %-clean-lazy:
 	rm -rf $(LAZY_DIR)/$*
