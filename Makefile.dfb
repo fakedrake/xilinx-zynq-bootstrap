@@ -44,11 +44,11 @@ png:
 freetype-tar-url=$(FREETYPE_URL)
 TAR_PROJECTS += freetype
 
-freetype-build: freetype zlib-lazy gnu-tools
-	$(call remote-maybe, cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh \
-	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
+freetype-build: freetype zlib-lazy png-lazy gnu-tools
+	$(call remote-maybe, cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh && \
+	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld --with-png && \
 	echo "[CONFIGURED]  $(LDFLAGS)" && \
-	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" PKG_CONFIG_PATH= && \
+	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" LDFLAGS="-lpng" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig:$(FILESYSTEM_ROOT)/lib/pkgconfig" && \
 	$(MAKE) install)
 
 freetype:
@@ -63,9 +63,9 @@ GIT_PROJECTS += flux
 
 export PATH:=$(PATH):$(TOOLS_DIR)/usr/bin
 flux-build: flux $(TOOLS_DIR)
-	cd $(SOURCES_DIR)/flux-git ; \
+	$(call remote_maybe cd $(SOURCES_DIR)/flux-git ; \
 	./autogen.sh --prefix=$(TOOLS_DIR) && \
-	./configure --prefix=$(TOOLS_DIR) && $(MAKE) && $(MAKE) install
+	./configure --prefix=$(TOOLS_DIR) && $(MAKE) && $(MAKE) install)
 
 # DirectFB
 directfb-git-repo=$(DFB_URL)

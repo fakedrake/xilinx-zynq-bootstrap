@@ -23,7 +23,7 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 
 ifneq ($(REMOTE_SERVER),)
-remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) '$1'
+remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
 remote-maybe=echo "==== Running locally ====" && $1
 endif
@@ -81,7 +81,7 @@ $(DTB_TREE):
 
 $(RESOURCES_DIR)/uImage: linux uboot-build gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
-	$(call remote-maybe,
+	$(call remote-maybe, \
 	cd $(SOURCES_DIR)/linux-git; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 uImage; \
