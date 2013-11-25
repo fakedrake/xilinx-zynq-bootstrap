@@ -15,10 +15,10 @@ jpeg-tar-url=$(JPEG_URL)
 TAR_PROJECTS += jpeg
 
 jpeg-build: jpeg gnu-tools
-	cd $(SOURCES_DIR)/jpeg-archive/*/; \
+	$(call remote-maybe, cd $(SOURCES_DIR)/jpeg-archive/*/; \
 	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc" --prefix="$(FILESYSTEM_ROOT)" && \
 	$(MAKE) && \
-	$(MAKE) install
+	$(MAKE) install)
 
 jpeg:
 	@echo "Getting libjpeg"
@@ -30,11 +30,11 @@ png-tar-url=$(PNG_URL)
 TAR_PROJECTS += png
 
 png-build: png zlib-lazy gnu-tools
-	cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/ && \
+	$(call remote-maybe, cd $(SOURCES_DIR)/png-archive/*/; mkdir -p objs/;  cd objs/ && \
 	../configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld CFLAGS="-L$(FILESYSTEM_ROOT)/lib/"; \
 	echo "[CONFIGURED]  -I$(FILESYSTEM_ROOT)/include/"; \
 	$(MAKE) LDFLAGS=" -L/homes/cperivol/Projects/xilinx-zynq-bootstrap/fs/lib/" && \
-	$(MAKE) install
+	$(MAKE) install)
 
 png:
 	@echo "Getting libpng"
@@ -45,11 +45,11 @@ freetype-tar-url=$(FREETYPE_URL)
 TAR_PROJECTS += freetype
 
 freetype-build: freetype zlib-lazy gnu-tools
-	cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh \
+	$(call remote-maybe, cd $(SOURCES_DIR)/freetype-archive/*/; ./autogen.sh \
 	./configure --host=$(GNU_TOOLS_HOST) CC="$(GNU_TOOLS_PREFIX)gcc -I$(FILESYSTEM_ROOT)/include/" --with-sysroot="$(FILESYSTEM_ROOT)" --prefix="$(FILESYSTEM_ROOT)" --with-gnu-ld; \
 	echo "[CONFIGURED]  $(LDFLAGS)" && \
 	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/lib/" PKG_CONFIG_PATH= && \
-	$(MAKE) install
+	$(MAKE) install)
 
 freetype:
 	@echo "Getting libfreetype"
@@ -73,9 +73,9 @@ GIT_PROJECTS += directfb
 PATH:=$(PATH):$(TOOLS_DIR)/bin
 
 directfb-build: directfb dfb-deps gnu-tools
-	[ -f $(SOURCES_DIR)/directfb-git/builder.sh ] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh
-	cd $(SOURCES_DIR)/directfb-git/; \
-	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug --bsroot $(ROOT_DIR) --disable-think2d
+	$(call remote-maybe, [ -f $(SOURCES_DIR)/directfb-git/builder.sh ] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh)
+	$(call remote-maybe, cd $(SOURCES_DIR)/directfb-git/; \
+	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug --bsroot $(ROOT_DIR) --disable-think2d)
 
 directfb:
 	@echo "Getting directfb"
@@ -85,14 +85,14 @@ directfb-examples-tar-url=$(DIRECTFB_EXAMPLES_URL)
 TAR_PROJECTS += directfb-examples
 
 directfb-examples-build: directfb-examples directfb-lazy
-	cd $(SOURCES_DIR)/directfb-examples-archive/*/; mkdir -p objs/;  cd objs/; \
+	$(call remote-maybe, cd $(SOURCES_DIR)/directfb-examples-archive/*/; mkdir -p objs/;  cd objs/; \
 	../configure --datadir="/usr/local/share" --host=$(GNU_TOOLS_HOST)  CC="$(GNU_TOOLS_PREFIX)gcc" CFLAGS=" -I$(FILESYSTEM_ROOT)/usr/include/ -I$(FILESYSTEM_ROOT)/include/" LDFLAGS="--sysroot=$(FILESYSTEM_ROOT) -L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/" PKG_CONFIG_PATH="$(FILESYSTEM_ROOT)/usr/lib/pkgconfig:$(FILESYSTEM_ROOT)/lib/pkgconfig" --enable-debug && \
 	$(MAKE) CFLAGS=" -I$(FILESYSTEM_ROOT)/include/ -L$(FILESYSTEM_ROOT)/usr/lib/ -L$(FILESYSTEM_ROOT)/lib/ -g" LDFLAGS=" --sysroot=$(FILESYSTEM_ROOT) -L$(FILESYSTEM_ROOT)/lib -L$(FILESYSTEM_ROOT)/usr/lib -L$(FILESYSTEM_ROOT)/usr/local/lib/" && \
-	$(MAKE) install DESTDIR=$(FILESYSTEM_ROOT)
+	$(MAKE) install DESTDIR=$(FILESYSTEM_ROOT))
 
 directfb-examples-clean:
-	cd $(SOURCES_DIR)/directfb-examples-archive/*/;  cd objs/; \
-	$(MAKE) distclean; \
+	$(call remote-maybe, cd $(SOURCES_DIR)/directfb-examples-archive/*/;  cd objs/; \
+	$(MAKE) distclean;)
 
 directfb-examples:
 	@echo "Getting directfb-examples"

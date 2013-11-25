@@ -23,9 +23,9 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 
 ifneq ($(REMOTE_SERVER),)
-remote-maybe=ssh $(REMOTE_SERVER) $1
+remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) '$1'
 else
-remote-maybe=$1
+remote-maybe=echo "==== Running locally ====" && $1
 endif
 
 force: ;
@@ -62,9 +62,9 @@ uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 
 $(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
-	cd $(SOURCES_DIR)/uboot-git ; \
+	$(call remote-maybe, $(call)cd $(SOURCES_DIR)/uboot-git ; \
 	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
-	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc"
+	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc")
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
 linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
@@ -77,14 +77,15 @@ DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702.dts
 linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
 
 $(DTB_TREE):
-	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
+	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE))
 
 $(RESOURCES_DIR)/uImage: linux uboot-build gnu-tools | $(RESOURCES_DIR)
 	@echo "Building Linux..."
+	$(call remote-maybe,
 	cd $(SOURCES_DIR)/linux-git; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) xilinx_zynq_defconfig ; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 uImage; \
-	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/uImage $(RESOURCES_DIR)/uImage
+	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/uImage $(RESOURCES_DIR)/uImage)
 
 
 # Busybox
@@ -93,9 +94,9 @@ GIT_PROJECTS += busybox
 
 busybox-build: busybox $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
-	cd $(SOURCES_DIR)/busybox-git; \
+	$(call remote-maybe, cd $(SOURCES_DIR)/busybox-git; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install)
 
 FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
 
@@ -108,28 +109,28 @@ $(FILESYSTEM_ROOT)/init.sh:
 
 filesystem-nossh: $(FS_DIRS) $(FILESYSTEM_ROOT)/init.sh busybox-build
 	@echo "Building filesystem"
-	cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/
-	cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/
-	cp -R $(GNU_TOOLS_UTILS)/libc/usr/* $(FILESYSTEM_ROOT)/usr/
+	$(call remote-maybe, cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/)
+	$(call remote-maybe, cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/)
+	$(call remote-maybe, cp -R $(GNU_TOOLS_UTILS)/libc/usr/* $(FILESYSTEM_ROOT)/usr/)
 
 # Strip debug symbols
 ifneq ($(DEBUG_LIBS),y)
-	for i in $(FILESYSTEM_ROOT)/lib/*; do \
+	$(call remote-maybe, for i in $(FILESYSTEM_ROOT)/lib/*; do \
 		if ([ -f "$$i" ] && [ ! "`file -b $$i`" = "ASCII text" ]); then $(GNU_TOOLS_PREFIX)strip $$i; fi; \
-	done
+	done)
 endif
 
-	cp $(DATA_DIR)/fstab $(FILESYSTEM_ROOT)/etc/fstab
-	cp $(DATA_DIR)/inittab $(FILESYSTEM_ROOT)/etc/inittab
-	cp $(DATA_DIR)/passwd $(FILESYSTEM_ROOT)/etc/passwd
+	$(call remote-maybe, cp $(DATA_DIR)/fstab $(FILESYSTEM_ROOT)/etc/fstab)
+	$(call remote-maybe, cp $(DATA_DIR)/inittab $(FILESYSTEM_ROOT)/etc/inittab)
+	$(call remote-maybe, cp $(DATA_DIR)/passwd $(FILESYSTEM_ROOT)/etc/passwd)
 
-	if [ ! -f $(FILESYSTEM_ROOT)/etc/init.d/rcS ] ; then \
+	$(call remote-maybe, if [ ! -f $(FILESYSTEM_ROOT)/etc/init.d/rcS ] ; then \
 		cp $(DATA_DIR)/rcS $(FILESYSTEM_ROOT)/etc/init.d/rcS; \
 		chmod 755 $(FILESYSTEM_ROOT)/etc/init.d/rcS; \
-	fi
+	fi)
 
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
-	$(shell sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
+	$(call remote-maybe, sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
 
 filesystem: filesystem-nossh openssh-build
 
@@ -142,32 +143,32 @@ ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
 $(RESOURCES_DIR)/ramdisk.img: filesystem resources | $(DRAFTS_DIR)
 	@echo "Building ramdisk..."
-	dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$((`du -s $(FILESYSTEM_ROOT) | awk '{print $$1}'`+1000))
-	mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0
-	tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0
+	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$((`du -s $(FILESYSTEM_ROOT) | awk '{print $$1}'`+1000)))
+	$(call remote-maybe, mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
+	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
 
-	mkdir $(DRAFTS_DIR)/ramdisk
+	$(call remote-maybe, mkdir $(DRAFTS_DIR)/ramdisk)
 	@echo "Sudo is used to mount ramdisk..."
-	sudo mount -o loop $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/
-	sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/
-	sudo umount $(DRAFTS_DIR)/ramdisk/
-	rmdir $(DRAFTS_DIR)/ramdisk/
+	$(call remote-maybe, sudo mount -o loop $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo umount $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, rmdir $(DRAFTS_DIR)/ramdisk/)
 
 ramdisk-clean:
-	$(shell [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/)
-	rm -rf $(DRAFTS_DIR)/ramdisk
-	rm -rf $(RESOURCES_DIR)/ramdisk.img
+	$(call remote-maybe, [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, rm -rf $(DRAFTS_DIR)/ramdisk)
+	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/ramdisk.img)
 
 $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
-	gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz
+	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz)
 
 $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
-	$(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz
+	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz)
 
 sdk: $(RESOURCES_DIR)/ps7_init.tcl $(RESOURCES_DIR)/ps7_init.tcl
 
 $(RESOURCES_DIR)/%.tcl :
-	cp $(DATA_DIR)/$*.tcl $@
+	$(call remote-maybe, cp $(DATA_DIR)/$*.tcl $@)
 
 include ./Makefile.ssh.def
 include ./Makefile.android
@@ -184,20 +185,20 @@ show-projects:
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 
 $(SOURCES_DIR)/%-git : force
-	if [ ! -d $@ ] || "$(force-$*-clone)" then; \
+	$(call remote-maybe, if [ ! -d $@ ] || "$(force-$*-clone)" then; \
 		git clone $($*-git-repo) $@ \
 		if [ "$($*-git-commit)" != "" ] then; git checkout $($*-git-commit); fi \
-	fi
-	@cd $@ && git pull
+	fi)
+	$(call remote-maybe, @cd $@ && git pull)
 
 %-git-purge:
-	rm -rf $(SOURCES_DIR)/$*-git
+	$(call remote-maybe, rm -rf $(SOURCES_DIR)/$*-git)
 
 %-clean:
-	cd $(SOURCES_DIR)/$*-git && $(MAKE) clean
+	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) clean)
 
 %-distclean:
-	cd $(SOURCES_DIR)/$*-git && $(MAKE) distclean
+	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) distclean)
 
 print-vars:
 	@echo "GNU_TOOLS_FTP=$(GNU_TOOLS_FTP)"
@@ -238,6 +239,8 @@ $(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
 # So that we do not configure everything over and over, I touch
 # something in lazy/ and you want to remove it to run lazy
 # dependencies.
+#
+# I will just do lazies locally for no particular reasons
 .SECONDEXPANSION:
 $(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
 	touch $@
@@ -256,3 +259,7 @@ $(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
 
 all-clean-lazy:
 	rm -rf $(LAZY_DIR)
+
+.PHONY: test_remote
+test_remote:
+	$(call remote-maybe, "hostname")
