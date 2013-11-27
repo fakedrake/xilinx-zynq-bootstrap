@@ -75,7 +75,7 @@ PATH:=$(PATH):$(TOOLS_DIR)/bin
 directfb-build: directfb dfb-deps gnu-tools
 	$(call remote-maybe, [ -f $(SOURCES_DIR)/directfb-git/builder.sh ] || ln -s $(DATA_DIR)/dfb-builder.sh $(SOURCES_DIR)/directfb-git/builder.sh)
 	$(call remote-maybe, cd $(SOURCES_DIR)/directfb-git/; \
-	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug --bsroot $(ROOT_DIR) --disable-think2d)
+	./builder.sh --sysroot $(FILESYSTEM_ROOT) --enable-debug --bsroot $(ROOT_DIR) --disable-think2d --make-cmd "$(MAKE) V=3")
 
 directfb:
 	@echo "Getting directfb"

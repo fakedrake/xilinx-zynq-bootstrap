@@ -10,9 +10,13 @@ BUILD_DIR=.
 BOOTSTRAP_ROOT=~/Projects/ThinkSilicon/xilinx-zynq-bootstrap/
 HELP_MESSAGE="--no-think2d will build without think2d support."
 JUST="none"
+MAKE="make"
 
 while [ $# -gt 0 ]; do
     case "$1" in
+	"--make-cmd")
+	    shift;
+	    MAKE="$1";;
 	"--bsroot")
 	    shift;
 	    BOOTSTRAP_ROOT="$1";;
@@ -65,16 +69,17 @@ function should_do {
 
 export CC=$FD_TARGET_PATH-gcc
 export CCLD=$FD_TARGET_PATH-ld
+export CXXLD=$FD_TARGET_PATH-ld
 export CPP=$FD_TARGET_PATH-cpp
 export CXX=$FD_TARGET_PATH-g++
-export FDFLAGS="-L${TARGET_FS}/lib -L${TARGET_FS}/usr/lib -L${TARGET_FS}/usr/local/lib/" # --sysroot=${TARGET_FS}
-export LIBS='-ljpeg -lpthread -lz -lpng'
-export CPPFLAGS="--sysroot=${TARGET_FS} -I${TARGET_FS}/usr/include -I${TARGET_FS}/include -I${TARGET_FS}/usr/include -g"
+export FDFLAGS="-L${TARGET_FS}/lib -L${TARGET_FS}/usr/lib -L${TARGET_FS}/usr/local/lib/"
+export LIBS='-ljpeg -lz -lpng -lpthread'
+export CPPFLAGS="-I${TARGET_FS}/usr/include -I${TARGET_FS}/include -I${TARGET_FS}/include/freetype2 -I${TARGET_FS}/usr/include"
+export CXXFLAGS="${FDFLAGS} -Wl,--sysroot,$TARGET_FS --sysroot=$TARGET_FS ${CPPFLAGS} -g"
 export CFLAGS="$FDFLAGS -g"
-export LDFLAGS="--sysroot=${TARGET_FS} $FDFLAGS"
+export LDFLAGS="$FDFLAGS --sysroot=$TARGET_FS"
 export PKG_CONFIG_PATH="${TARGET_FS}/usr/lib/pkgconfig:${TARGET_FS}/lib/pkgconfig"
-
-CONFIG_ARGS="--host=$FD_TARGET --prefix=${TARGET_FS}/usr $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-linotype --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes --enable-freetype"
+CONFIG_ARGS="--host=$FD_TARGET --with-sysroot=${TARGET_FS}  --prefix=${TARGET_FS} $CONFIGURE_THINK2D --with-inputdrivers=keyboard,ps2mouse --enable-static --enable-shared --enable-zlib --disable-devmem --disable-linotype --disable-x11 --disable-wayland --disable-mesa --disable-drmkms --disable-x11vdpau --disable-osx --disable-tiff --disable-webp --enable-fbdev $DEBUGGING --enable-dynload=yes --enable-freetype"
 
 echo "Check my config."
 for e in $CC $CPP $CXX ; do
@@ -87,9 +92,9 @@ done
 echo "CWD: $BUILD_DIR"
 echo "Config params: $CONFIG_ARGS"
 
-if should_do "autogen"; then
-    $SOURCE_DIR/autogen.sh $CONFIG_ARGS || fail "Autogening"
-fi
+# if should_do "autogen"; then
+#     $SOURCE_DIR/autogen.sh $CONFIG_ARGS || fail "Autogening"
+# fi
 
 cd $BUILD_DIR
 
@@ -98,7 +103,7 @@ if should_do "config"; then
 fi
 
 if should_do "compile"; then
-    make exec_prefix="/usr" $MAKE_ARGS || fail "Compilation"
+    $MAKE $MAKE_ARGS || fail "Compilation"
 fi
 
 if should_do "install"; then
