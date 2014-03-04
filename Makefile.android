@@ -21,7 +21,7 @@ $(ANDROID_DTB_TREE):
 
 REPO="$(TOOLS_DIR)/repo"
 PATH:=$(TOOLS_DIR):$(PATH)
-REPO_URL="https://dl-ssl.google.com/dl/googlesource/git-repo/repo"
+REPO_URL=http://commondatastorage.googleapis.com/git-repo-downloads/repo # "https://dl-ssl.google.com/dl/googlesource/git-repo/repo"
 
 # Java stuff
 JAVA_HOME:=/opt/java6/
@@ -37,10 +37,10 @@ PYTHON_V=$(shell python --version |& tee)
 
 .SECONDARY:
 $(TOOLS_DIR)/python:
-	[ -f $@ ] && rm $@
-	if [ "$(PYTHON_V)" = "Python 2.7.5" ]; then \
+	[ -f $@ ] && rm $@ || echo "No python, I'll link to the system one."
+	if [ "$(PYTHON_V)" = "Python 2.7.6" ]; then \
 		ln -s $(shell which python) $(TOOLS_DIR)/python; \
-	elif [ "$(PYTHON_V2)" = "Python 2.7.5" ]; then \
+	elif [ "$(PYTHON_V2)" = "Python 2.7.6" ]; then \
 		ln -s $(shell which python2) $(TOOLS_DIR)/python; \
 	else \
 		echo "No good python version found. (found $(PYTHON_V) and $(PYTHON_V2))"; \
