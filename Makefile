@@ -25,7 +25,7 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 ifneq ($(REMOTE_SERVER),)
 remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
-remote-maybe=echo "==== Running locally ====" && $1
+remote-maybe=$1
 endif
 
 force: ;
