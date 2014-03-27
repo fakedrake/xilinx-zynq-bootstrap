@@ -130,7 +130,7 @@ endif
 	fi)
 
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
-	$(call remote-maybe, sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
+	$(call remote-maybe, [ "$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ] || sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
 
 filesystem: filesystem-nossh openssh-build
 
