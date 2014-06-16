@@ -43,8 +43,8 @@ GNU_TOOLS_UTILS=$(GNU_TOOLS)/arm-xilinx-linux-gnueabi/
 GNU_TOOLS_BIN=$(GNU_TOOLS)/bin
 GNU_TOOLS_HOST=arm-xilinx-linux-gnueabi
 GNU_TOOLS_PREFIX=$(GNU_TOOLS_BIN)/arm-xilinx-linux-gnueabi-
-CROSS_COMPILE := $(GNU_TOOLS_PREFIX)
-PATH := ${PATH}:$(GNU_TOOLS_BIN):$(SOURCES_DIR)/uboot-git/tools/
+export CROSS_COMPILE := $(GNU_TOOLS_PREFIX)
+export PATH := ${PATH}:$(GNU_TOOLS_BIN):$(SOURCES_DIR)/uboot-git/tools/
 
 gnu-tools-tar-url=$(GNU_TOOLS_FTP)
 TAR_PROJECTS += gnu-tools
