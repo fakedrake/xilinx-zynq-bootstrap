@@ -187,10 +187,10 @@ $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 
 $(SOURCES_DIR)/%-git : force
 	$(call remote-maybe, if [ ! -d $@ ] || [ -z "$(force-$*-clone)" ]; then \
-		git clone $($*-git-repo) $@ ; \
+		git clone --depth 20 $($*-git-repo) $@ ; \
 		[ -z "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
 	fi)
-	$(call remote-maybe, @cd $@ && git pull)
+	$(call remote-maybe, cd $@ && git pull)
 
 %-git-purge:
 	$(call remote-maybe, rm -rf $(SOURCES_DIR)/$*-git)
