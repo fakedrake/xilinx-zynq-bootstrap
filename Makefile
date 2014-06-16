@@ -59,8 +59,9 @@ uboot-git-repo="git://git.xilinx.com/u-boot-xlnx.git"
 GIT_PROJECTS += uboot
 
 uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
+	@echo "UBoot built successfully!"
 
-$(RESOURCES_DIR)/u-boot.elf:  gnu-tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/u-boot.elf: gnu-tools | $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	$(call remote-maybe, $(call)cd $(SOURCES_DIR)/uboot-git ; \
 	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
@@ -185,9 +186,9 @@ show-projects:
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 
 $(SOURCES_DIR)/%-git : force
-	$(call remote-maybe, if [ ! -d $@ ] || "$(force-$*-clone)" then; \
-		git clone $($*-git-repo) $@ \
-		if [ "$($*-git-commit)" != "" ] then; git checkout $($*-git-commit); fi \
+	$(call remote-maybe, if [ ! -d $@ ] || [ -z "$(force-$*-clone)" ]; then \
+		git clone $($*-git-repo) $@ ; \
+		[ -z "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
 	fi)
 	$(call remote-maybe, @cd $@ && git pull)
 
@@ -263,3 +264,5 @@ all-clean-lazy:
 .PHONY: test_remote
 test_remote:
 	$(call remote-maybe, "hostname")
+
+.PHONY: $(GIT_PROJECTS)
