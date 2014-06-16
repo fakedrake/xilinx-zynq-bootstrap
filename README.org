@@ -1,11 +1,47 @@
 * Usage
-** Cleanup
-   For archives you can run for exaple:
+** Building for Zynq
+   To bootstrap the sw stack for a zynq board you first need to build everything with
+
    #+BEGIN_EXAMPLE
-   make libpng-clean-archive
+   make board-ready
    #+END_EXAMPLE
 
-   To remove all traces of libpng (except from the filesystem)
+   This one pulls linux and uboot and other stuff and builds a ramdisk
+   etc so make some coffee, it is going to take a while.
+
+   *Note:* You will need root at some point to set uid to 0 for some
+   files in the ramdisk.
+
+** Load linux on device
+   To load everything you built on your board, connect your board to
+   your computer (make sure you have =xmd= though) and use the
+   =load-linux.sh= script.
+
+   For example:
+   #+BEGIN_EXAMPLE
+   ./load-linux.sh
+   #+END_EXAMPLE
+   To just load everything through =xmd= and then fire up a serial
+   connection via minicom.
+
+   Use =--help= for other options.
+
+** Remote build
+   In the special case that you are working on a mounted filesystem
+   and the absolute paths of your machine match the absolute paths in
+   an ssh accessible faster machine you can use the =REMOTE_SERVER=
+   variable. For example:
+
+   #+BEGIN_EXAMPLE
+   make board-ready REMOTE_SERVER=192.168.1.27
+   #+END_EXAMPLE
+
+   or even
+
+   #+BEGIN_EXAMPLE
+   make board-ready REMOTE_SERVER=me@fastserver
+   #+END_EXAMPLE
+
 ** Threads
    To compile directfb with 4 threads do.
    #+BEGIN_EXAMPLE
@@ -13,6 +49,15 @@
    #+END_EXAMPLE
 
    This converts all calls to =make= into =make -j4=.
+
+** Cleanup
+   For archives you can run for exaple:
+   #+BEGIN_EXAMPLE
+   make libpng-clean-archive
+   #+END_EXAMPLE
+
+   To remove all traces of libpng (except from the filesystem)
+
 ** DirectFB
    To build everything run
 

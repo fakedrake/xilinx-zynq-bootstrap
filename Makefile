@@ -25,7 +25,7 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 ifneq ($(REMOTE_SERVER),)
 remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
-remote-maybe=echo "==== Running locally ====" && $1
+remote-maybe=$1
 endif
 
 force: ;
@@ -131,7 +131,7 @@ endif
 	fi)
 
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
-	$(call remote-maybe, sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
+	$(call remote-maybe, [ "$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ] || sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
 
 filesystem: filesystem-nossh openssh-build
 
