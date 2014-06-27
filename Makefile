@@ -166,7 +166,7 @@ $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
 $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
 	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz)
 
-sdk: $(RESOURCES_DIR)/ps7_init.tcl $(RESOURCES_DIR)/ps7_init.tcl
+sdk: $(RESOURCES_DIR)/stub.tcl $(RESOURCES_DIR)/ps7_init.tcl
 
 $(RESOURCES_DIR)/%.tcl :
 	$(call remote-maybe, cp $(DATA_DIR)/$*.tcl $@)
