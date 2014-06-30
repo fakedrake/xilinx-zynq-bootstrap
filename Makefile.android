@@ -27,25 +27,6 @@ REPO_URL=http://commondatastorage.googleapis.com/git-repo-downloads/repo # "http
 JAVA_HOME:=/opt/java6/
 PATH:=$(JAVA_HOME)/bin/:$(PATH)
 
-.SECONDARY:
-$(REPO): $(TOOLS_DIR)/python | $(TOOLS_DIR)
-	wget $(REPO_URL) -O $(REPO)
-	chmod a+x $(REPO)
-
-PYTHON_V2=$(shell python2 --version |& tee)
-PYTHON_V=$(shell python --version |& tee)
-
-.SECONDARY:
-$(TOOLS_DIR)/python:
-	[ -f $@ ] && rm $@ || echo "No python, I'll link to the system one."
-	if [ "$(PYTHON_V)" = "Python 2.7.6" ]; then \
-		ln -s $(shell which python) $(TOOLS_DIR)/python; \
-	elif [ "$(PYTHON_V2)" = "Python 2.7.6" ]; then \
-		ln -s $(shell which python2) $(TOOLS_DIR)/python; \
-	else \
-		echo "No good python version found. (found $(PYTHON_V) and $(PYTHON_V2))"; \
-	fi
-
 ANDROID_ROOT_IMG="$(RESOURCES_DIR)/android-root.img"
 ANDROID_MANIFEST="git://git.iveia.com/scm/xilinx/android/platform/manifest.git"
 ANDROID_BRANCH="android-zynq-1.0"

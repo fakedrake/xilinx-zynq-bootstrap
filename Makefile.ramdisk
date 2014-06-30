@@ -4,7 +4,7 @@ GIT_PROJECTS += busybox
 
 busybox-build: $(FILESYSTEM_ROOT)/busybox_update
 
-$(FILESYSTEM_ROOT)/busybox_update: busybox $(FS_DIRS) gnu-tools
+$(FILESYSTEM_ROOT)/busybox_update: | busybox $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
 	$(call remote-maybe, cd $(SOURCES_DIR)/busybox-git; \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
@@ -22,7 +22,7 @@ $(FILESYSTEM_ROOT)/init.sh:
 
 filesystem-nossh: $(FILESYSTEM_ROOT)/fs_update
 
-$(FILESYSTEM_ROOT)/fs_update: $(FS_DIRS) $(FILESYSTEM_ROOT)/init.sh busybox-build
+$(FILESYSTEM_ROOT)/fs_update: $(FS_DIRS) $(FILESYSTEM_ROOT)/init.sh $(FILESYSTEM_ROOT)/busybox_update
 	@echo "Building filesystem"
 	$(call remote-maybe, cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/)
 	$(call remote-maybe, cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/)
@@ -49,7 +49,7 @@ endif
 	(date && find $(FILESYSTEM_ROOT)) > $@
 
 
-filesystem: $(FILESYSTEM_ROOT)/fs_update openssh-build
+filesystem:  $(FILESYSTEM_ROOT)/fs_update openssh-build
 
 filesystem-clean:
 	rm -rf $(FILESYSTEM_ROOT)
@@ -58,9 +58,9 @@ ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
 
-$(RESOURCES_DIR)/ramdisk.img: filesystem | $(DRAFTS_DIR) $(RESOURCES_DIR)
+$(RESOURCES_DIR)/ramdisk.img:  $(FILESYSTEM_ROOT)/fs_update | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	@echo "Building ramdisk..."
-	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$(($(du -s $(FILESYSTEM_ROOT) | awk '{print $$1}') + 1000)))
+	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$(($$(du -s $(FILESYSTEM_ROOT) | awk '{print $$1}') + 1000)))
 	$(call remote-maybe, mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
 	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
 
@@ -72,9 +72,9 @@ $(RESOURCES_DIR)/ramdisk.img: filesystem | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	$(call remote-maybe, rmdir $(DRAFTS_DIR)/ramdisk/)
 
 ramdisk-clean:
-	$(call remote-maybe, [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
+	$(call remote-maybe, [ "$$(mount -l | grep $(DRAFTS_DIR)/ramdisk)" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
 	$(call remote-maybe, rm -rf $(DRAFTS_DIR)/ramdisk)
-	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/ramdisk.img)
+	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/ramdisk.img.*)
 
 $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
 	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz)

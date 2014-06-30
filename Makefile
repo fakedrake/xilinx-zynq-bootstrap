@@ -1,7 +1,7 @@
 # Definable
 
 MAKETHREADS=4
-MAKE=make -j$(MAKETHREADS)
+MAKE:=$(MAKE) -j$(MAKETHREADS)
 
 # My directories
 ROOT_DIR=$(PWD)

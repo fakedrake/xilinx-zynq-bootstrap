@@ -6,7 +6,7 @@ GIT_PROJECTS += uboot
 uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 	@echo "UBoot built successfully!"
 
-$(RESOURCES_DIR)/u-boot.elf: gnu-tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	$(call remote-maybe, $(call)cd $(SOURCES_DIR)/uboot-git ; \
 	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
@@ -19,7 +19,7 @@ $(RESOURCES_DIR)/u-boot.elf: gnu-tools | $(RESOURCES_DIR)
 linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
 GIT_PROJECTS += linux
 
-KERNEL_CONFIG = xilinx_zynq_defconfig
+KERNEL_CONFIG=xilinx_zynq_android_defconfig
 
 DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702.dts
@@ -30,7 +30,7 @@ $(DTB_TREE):
 	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE))
 
 # This means either uImage or zImage or whatever.
-$(RESOURCES_DIR)/%Image: linux uboot-build gnu-tools | $(RESOURCES_DIR)
+$(RESOURCES_DIR)/%Image: $(RESOURCES_DIR)/u-boot.elf | linux gnu-tools $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	$(call remote-maybe, \
 	cd $(SOURCES_DIR)/linux-git; \

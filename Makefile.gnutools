@@ -14,3 +14,21 @@ gnu-tools:
 	@echo "Getting GNU Tools"
 
 gnu-tools-clean: gnu-tools-archive-clean
+
+.SECONDARY:
+$(REPO): $(TOOLS_DIR)/python | $(TOOLS_DIR)
+	wget $(REPO_URL) -O $(REPO)
+	chmod a+x $(REPO)
+
+PYTHON_V2=$(shell python2 --version 2>&1)
+PYTHON_V=$(shell python --version 2>&1)
+
+.SECONDARY:
+$(TOOLS_DIR)/python: | $(TOOLS_DIR)
+	[ -f $@ ] && rm $@ || echo "No python, I'll link to the system one."
+	case "$(PYTHON_V)" in "Python 2.7."*) \
+		ln -s $(shell which python) $(TOOLS_DIR)/python;; esac;
+
+	! [ -f $(TOOLS_DIR)/python ] && \
+	case "$(PYTHON_V2)" in "Python 2.7."*) \
+		ln -s $(shell which python2) $(TOOLS_DIR)/python;; esac;

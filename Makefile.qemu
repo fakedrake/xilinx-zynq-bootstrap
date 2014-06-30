@@ -26,9 +26,7 @@ CMA=cma=80M
 
 # BOOTCMD="console=ttyPS0,115200 root=/dev/ram rw ip=:::::eth0:dhcp earlyprintk ramdisk_size=$(du --apparent-size $RAMDISK | awk '{print $1}'),1 $CMA"
 BOOTCMD=-append "console=ttyPS0,115200  root=/dev/nfs rw nfsroot=10.0.2.2:/srv/nfs,proto=tcp  2049,proto=tcp ip=:::::eth0:dhcp $(CMA)"
-
-SERIAL=-nographic -serial null -serial mon:stdio
-QEMU_ARGS = -M xilinx-zynq-a9 $(SERIAL) -m 1024 $MEM_PREALLOC -dtb $(DTB_TREE) -kernel $(QEMU_KERNEL)  $(NET)
+QEMU_ARGS = -M xilinx-zynq-a9 $(SERIAL) -m 1024 $(MEM_PREALLOC) -dtb $(DTB_TREE) -kernel $(QEMU_KERNEL)  $(NET)
 
 # /======= CONFIG ======
 
@@ -37,10 +35,10 @@ GIT_PROJECTS += qemu
 
 qemu-build: $(QEMU) $(QEMU_KERNEL) $(DTB_TREE) $(QEMU_RAMDISK)
 
-$(QEMU): qemu $(TOOLS_DIR)/python
-	cd $(SOURCES_DIR)/qemu-git; \
-	git submodule --update dtc; \
-	./configure --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python && make -j4 && make install
+$(QEMU): | qemu $(TOOLS_DIR)/python
+	$(call remote-maybe,  cd $(SOURCES_DIR)/qemu-git; \
+	git submodule update --init dtc &&  \
+	./configure --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python && $(MAKE) && $(MAKE) install )
 
 qemu-run: qemu-build
 	$(QEMU) $(QEMU_ARGS) $(BOOTCMD)
@@ -60,3 +58,7 @@ qemu-debug-kernel: qemu-build
 	echo $(QEMU_GDBINIT) > .gdbinit
 	$(QEMU) $(QEMU_ARGS) -s -S $(BOOTCMD)
 	@echo "Now run 'gdb' in this directory."
+
+.PHONY:
+qemu-clean:
+	rm $(QEMU)

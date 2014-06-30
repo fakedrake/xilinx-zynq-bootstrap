@@ -12,12 +12,13 @@ $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 $(SOURCES_DIR)/%-git : force
 	$(call remote-maybe, if [ ! -d $@ ] || [ -z "$(force-$*-clone)" ]; then \
 		git clone --depth 20 $($*-git-repo) $@ ; \
-		[ -z "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
+		[ -n "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
 	fi)
 
 %-git-purge:
 	$(call remote-maybe, rm -rf $(SOURCES_DIR)/$*-git)
 
+.PHONY:
 %-clean:
 	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) clean)
 
