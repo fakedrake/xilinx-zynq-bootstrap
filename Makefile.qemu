@@ -1,15 +1,62 @@
+# Qemu will be built around the kernel (see Makefile.kernel). Very few
+# things will be overriden.
 
-qemu-git-repo=git@github.com:Xilinx/qemu
+# ==== CONFIGURATION ======
+# Uncomment to debug qemu
+QEMU = $(TOOLS_DIR)/bin/qemu-system-arm
+
+## Memory preallocation
+# MEM_PREALLOC="-mem-prealloc -mem-path /dev/shm"
+
+
+## Select kernel
+# KERNEL=/homes/cperivol/Projects/zynq_linux/kernel/zImage
+# KERNEL=/homes/ggkitsas/Projects/zynq-linux/linux-xlnx/arch/arm/boot/zImage
+QEMU_KERNEL = $(RESOURCES_DIR)/zImage
+
+## A ramdisk
+QEMU_RAMDISK = $(RESOURCES_DIR)/ramdisk.img.gz
+
+## Networking
+# NET="-redir tcp:5555::80 -redir tcp:5556::445"
+# NET="-net nic -net tap,ifname=tap0"
+
+## Boot
+CMA=cma=80M
+
+# BOOTCMD="console=ttyPS0,115200 root=/dev/ram rw ip=:::::eth0:dhcp earlyprintk ramdisk_size=$(du --apparent-size $RAMDISK | awk '{print $1}'),1 $CMA"
+BOOTCMD=-append "console=ttyPS0,115200  root=/dev/nfs rw nfsroot=10.0.2.2:/srv/nfs,proto=tcp  2049,proto=tcp ip=:::::eth0:dhcp $(CMA)"
+
+SERIAL=-nographic -serial null -serial mon:stdio
+QEMU_ARGS = -M xilinx-zynq-a9 $(SERIAL) -m 1024 $MEM_PREALLOC -dtb $(DTB_TREE) -kernel $(QEMU_KERNEL)  $(NET)
+
+# /======= CONFIG ======
+
+qemu-git-repo=git@github.com:fakedrake/qemu
 GIT_PROJECTS += qemu
 
-qemu-build: $(TOOLS_DIR)/bin/qemu-system-arm
+qemu-build: $(QEMU) $(QEMU_KERNEL) $(DTB_TREE) $(QEMU_RAMDISK)
 
-$(TOOLS_DIR)/bin/qemu-system-arm: qemu $(TOOLS_DIR)/python
+$(QEMU): qemu $(TOOLS_DIR)/python
 	cd $(SOURCES_DIR)/qemu-git; \
 	git submodule --update dtc; \
 	./configure --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python && make -j4 && make install
 
-ramdisk-qemu: $(RESOURCES_DIR)/ramdisk.img.gz
+qemu-run: qemu-build
+	$(QEMU) $(QEMU_ARGS) $(BOOTCMD)
 
-.PHONY: qemu-ready
-qemu-ready: linux-build ramdisk-qemu qemu-build
+
+QEMU_GDBINIT = "cd $(RESOURCES_DIR)/linux-git\nfile vmlinux\ntarget remote :1234"
+
+QEMU_KERNEL_GDBINIT = "$(QEMU_GDBINIT)\nb panic\nb sys_sync\nstart $(QEMU_ARGS) $(BOOTCMD)"
+
+.PHONY:
+qemu-debug: qemu-build
+	echo $(QEMU_GDBINIT) > .gdbinit
+	gdb $(QEMU)
+
+.PHONY:
+qemu-debug-kernel: qemu-build
+	echo $(QEMU_GDBINIT) > .gdbinit
+	$(QEMU) $(QEMU_ARGS) -s -S $(BOOTCMD)
+	@echo "Now run 'gdb' in this directory."

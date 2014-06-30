@@ -1,0 +1,59 @@
+# Project management
+
+show-projects:
+	@echo "Git Projects: $(GIT_PROJECTS)"
+	@echo "Archive Projects: $(TAR_PROJECTS)"
+
+# Have repositories
+.PHONY:
+.SECONDEXPANSION :
+$(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
+
+$(SOURCES_DIR)/%-git : force
+	$(call remote-maybe, if [ ! -d $@ ] || [ -z "$(force-$*-clone)" ]; then \
+		git clone --depth 20 $($*-git-repo) $@ ; \
+		[ -z "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
+	fi)
+
+%-git-purge:
+	$(call remote-maybe, rm -rf $(SOURCES_DIR)/$*-git)
+
+%-clean:
+	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) clean)
+
+%-distclean:
+	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) distclean)
+
+print-vars:
+	@echo "GNU_TOOLS_FTP=$(GNU_TOOLS_FTP)"
+	@echo "GNU_TOOLS_ZIP=$(GNU_TOOLS_ZIP)"
+	@echo "GNU_TOOLS_DIR=$(GNU_TOOLS_DIR)"
+	@echo "GNU_TOOLS=$(GNU_TOOLS)"
+	@echo "GNU_TOOLS_UTILS=$(GNU_TOOLS_UTILS)"
+	@echo "GNU_TOOLS_BIN=$(GNU_TOOLS_BIN)"
+	@echo "GNU_TOOLS_HOST=$(GNU_TOOLS_HOST)"
+	@echo "GNU_TOOLS_PREFIX=$(GNU_TOOLS_PREFIX)"
+	@echo "CROSS_COMPILE=$(CROSS_COMPILE)"
+	@echo "PATH=$(PATH)"
+	@echo "uboot-git-repo=$(uboot-git-repo)"
+	@echo "linux-git-repo=$(linux-git-repo)"
+	@echo "busybox-git-repo=$(busybox-git-repo)"
+	@echo "openssh-zip-url=$(openssh-zip-url)"
+
+# For zip archives we need a url to the zip archive an the path from
+# the zip root to the project root.
+.SECONDEXPANSION :
+$(TAR_PROJECTS) :  $(SOURCES_DIR) $(SOURCES_DIR)/$$@-archive
+
+.SECONDARY:
+$(DRAFTS_DIR)/%.tar.gz: | $(DRAFTS_DIR)
+	echo "Pulling $*."
+	wget $($*-tar-url) -O $(DRAFTS_DIR)/$*.tar.gz
+
+.SECONDEXPANSION :
+$(SOURCES_DIR)/%-archive : | $(DRAFTS_DIR)/$$*.tar.gz
+	mkdir $@
+	cd $@ && tar xvzf $(DRAFTS_DIR)/$*.tar.gz
+
+%-clean-archive:
+	rm -rf $(SOURCES_DIR)/$*-archive $(DRAFTS_DIR)/$*.tar.gz

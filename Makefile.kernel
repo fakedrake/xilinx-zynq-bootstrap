@@ -1,0 +1,39 @@
+# Kernel relatd stuff
+
+uboot-git-repo="git://git.xilinx.com/u-boot-xlnx.git"
+GIT_PROJECTS += uboot
+
+uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
+	@echo "UBoot built successfully!"
+
+$(RESOURCES_DIR)/u-boot.elf: gnu-tools | $(RESOURCES_DIR)
+	@echo "Building U-Boot"
+	$(call remote-maybe, $(call)cd $(SOURCES_DIR)/uboot-git ; \
+	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
+	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc")
+	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
+
+
+# linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
+# linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
+linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
+GIT_PROJECTS += linux
+
+KERNEL_CONFIG = xilinx_zynq_defconfig
+
+DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
+DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702.dts
+
+linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
+
+$(DTB_TREE):
+	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE))
+
+# This means either uImage or zImage or whatever.
+$(RESOURCES_DIR)/%Image: linux uboot-build gnu-tools | $(RESOURCES_DIR)
+	@echo "Building Linux..."
+	$(call remote-maybe, \
+	cd $(SOURCES_DIR)/linux-git; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) $(KERNEL_CONFIG) ; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 $*Image; \
+	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/$*Image $(RESOURCES_DIR)/$*Image)

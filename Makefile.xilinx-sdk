@@ -1,0 +1,4 @@
+sdk: $(RESOURCES_DIR)/stub.tcl $(RESOURCES_DIR)/ps7_init.tcl
+
+$(RESOURCES_DIR)/%.tcl :
+	$(call remote-maybe, cp $(DATA_DIR)/$*.tcl $@)

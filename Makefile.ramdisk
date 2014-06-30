@@ -1,0 +1,83 @@
+# Busybox
+busybox-git-repo="git://git.busybox.net/busybox"
+GIT_PROJECTS += busybox
+
+busybox-build: $(FILESYSTEM_ROOT)/busybox_update
+
+$(FILESYSTEM_ROOT)/busybox_update: busybox $(FS_DIRS) gnu-tools
+	@echo "Building Busybox..."
+	$(call remote-maybe, cd $(SOURCES_DIR)/busybox-git; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" defconfig && \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) CONFIG_PREFIX="$(FILESYSTEM_ROOT)" install)
+	(date && find $(FILESYSTEM_ROOT)) > $@
+
+FS_DIRS = $(FILESYSTEM_ROOT) $(FILESYSTEM_ROOT)/lib $(FILESYSTEM_ROOT)/dev $(FILESYSTEM_ROOT)/etc $(FILESYSTEM_ROOT)/etc/dropbear $(FILESYSTEM_ROOT)/etc/init.d $(FILESYSTEM_ROOT)/mnt $(FILESYSTEM_ROOT)/opt $(FILESYSTEM_ROOT)/proc $(FILESYSTEM_ROOT)/root $(FILESYSTEM_ROOT)/sys $(FILESYSTEM_ROOT)/tmp $(FILESYSTEM_ROOT)/var $(FILESYSTEM_ROOT)/var/log $(FILESYSTEM_ROOT)/var/www $(FILESYSTEM_ROOT)/sbin $(FILESYSTEM_ROOT)/usr/ $(FILESYSTEM_ROOT)/usr/bin
+
+$(FS_DIRS):
+	[ ! -d $@ ] && mkdir -p $@ || echo "$@ is there!"
+
+$(FILESYSTEM_ROOT)/init.sh:
+	cp $(DATA_DIR)/fdinit.sh $@
+	chmod a+x $@
+
+filesystem-nossh: $(FILESYSTEM_ROOT)/fs_update
+
+$(FILESYSTEM_ROOT)/fs_update: $(FS_DIRS) $(FILESYSTEM_ROOT)/init.sh busybox-build
+	@echo "Building filesystem"
+	$(call remote-maybe, cp $(GNU_TOOLS_UTILS)/libc/lib/* $(FILESYSTEM_ROOT)/lib/)
+	$(call remote-maybe, cp -R $(GNU_TOOLS_UTILS)/libc/sbin/* $(FILESYSTEM_ROOT)/sbin/)
+	$(call remote-maybe, cp -R $(GNU_TOOLS_UTILS)/libc/usr/* $(FILESYSTEM_ROOT)/usr/)
+
+# Strip debug symbols
+ifneq ($(DEBUG_LIBS),y)
+	$(call remote-maybe, for i in $(FILESYSTEM_ROOT)/lib/*; do \
+		if ([ -f "$$i" ] && [ ! "`file -b $$i`" = "ASCII text" ]); then $(GNU_TOOLS_PREFIX)strip $$i; fi; \
+	done)
+endif
+
+	$(call remote-maybe, cp $(DATA_DIR)/fstab $(FILESYSTEM_ROOT)/etc/fstab)
+	$(call remote-maybe, cp $(DATA_DIR)/inittab $(FILESYSTEM_ROOT)/etc/inittab)
+	$(call remote-maybe, cp $(DATA_DIR)/passwd $(FILESYSTEM_ROOT)/etc/passwd)
+
+	$(call remote-maybe, if [ ! -f $(FILESYSTEM_ROOT)/etc/init.d/rcS ] ; then \
+		cp $(DATA_DIR)/rcS $(FILESYSTEM_ROOT)/etc/init.d/rcS; \
+		chmod 755 $(FILESYSTEM_ROOT)/etc/init.d/rcS; \
+	fi)
+
+	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
+	$(call remote-maybe, [ "$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ] || sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
+	(date && find $(FILESYSTEM_ROOT)) > $@
+
+
+filesystem: $(FILESYSTEM_ROOT)/fs_update openssh-build
+
+filesystem-clean:
+	rm -rf $(FILESYSTEM_ROOT)
+
+ramdisk: ramdisk-board ramdisk-qemu
+ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
+
+
+$(RESOURCES_DIR)/ramdisk.img: filesystem | $(DRAFTS_DIR) $(RESOURCES_DIR)
+	@echo "Building ramdisk..."
+	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$(($(du -s $(FILESYSTEM_ROOT) | awk '{print $$1}') + 1000)))
+	$(call remote-maybe, mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
+	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
+
+	$(call remote-maybe, mkdir $(DRAFTS_DIR)/ramdisk)
+	@echo "Sudo is used to mount ramdisk..."
+	$(call remote-maybe, sudo mount -o loop $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo umount $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, rmdir $(DRAFTS_DIR)/ramdisk/)
+
+ramdisk-clean:
+	$(call remote-maybe, [ "`mount -l | grep $(DRAFTS_DIR)/ramdisk`" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
+	$(call remote-maybe, rm -rf $(DRAFTS_DIR)/ramdisk)
+	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/ramdisk.img)
+
+$(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
+	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz)
+
+$(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
+	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz)

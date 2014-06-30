@@ -4,7 +4,9 @@ ZLIB_INSTALL_ROOT=$(FILESYSTEM_ROOT)
 zlib-git-repo="https://github.com/madler/zlib"
 GIT_PROJECTS += zlib
 
-zlib-build: zlib gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+zlib-build: $(FILESYSTEM_ROOT)/lib/libz.a
+
+$(FILESYSTEM_ROOT)/lib/libz.a: | zlib gnu-tools  $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
 	cd $(SOURCES_DIR)/zlib-git/; \
 	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$(ZLIB_INSTALL_ROOT); \
 	make; \
@@ -13,7 +15,9 @@ zlib-build: zlib gnu-tools $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
 openssl-git-repo="git://git.openssl.org/openssl.git"
 GIT_PROJECTS += openssl
 
-openssl-build: openssl gnu-tools filesystem-nossh zlib-build $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+openssl-build: $(FILESYSTEM_ROOT)/lib/libssl.a
+
+$(FILESYSTEM_ROOT)/lib/libssl.a: | openssl gnu-tools filesystem-nossh zlib-build $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
 	@echo "Cross compiling openssl: $(CROSS_COMPILE)"
 	# or maybe linux-generic32 or linux-armv4
 	cd $(SOURCES_DIR)/openssl-git/; \
@@ -31,9 +35,11 @@ openssl-distclean:
 # git.
 openssh-tar-url="ftp://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.2p2.tar.gz"
 TAR_PROJECTS += openssh
-openssh-build: openssh gnu-tools openssl-build zlib-build $(FILESYSTEM_ROOT) | $(SSH_INSTALL_ROOT)
+openssh-build: $(FILESYSTEM_ROOT)/bin/ssh
+
+$(FILESYSTEM_ROOT)/bin/ssh: | openssh gnu-tools openssl-build zlib-build $(SSH_INSTALL_ROOT) $(FILESYSTEM_ROOT)
 	echo "Building $openssh-archive"
-	cd $(SOURCES_DIR)/openssh-archive/*/; ./configure --prefix=$(FILESYSTEM_ROOT) --host=$(GNU_TOOLS_HOST) --with-privsep-path=$(FILESYSTEM_ROOT)/var/empty --with-libs --with-zlib=$(SSH_INSTALL_ROOT) --with-ssl-dir=$(SSH_INSTALL_ROOT) --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip" ; \
-	make; make install-nokeys
+	cd $(SOURCES_DIR)/openssh-archive/*/; ./configure --prefix=$(FILESYSTEM_ROOT) --host=$(GNU_TOOLS_HOST) --with-privsep-path=$(FILESYSTEM_ROOT)/var/empty --with-libs --with-zlib=$(SSH_INSTALL_ROOT) --with-ssl-dir=$(SSH_INSTALL_ROOT) --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip" && \
+	make && make install-nokeys
 
 openssh-clean: openssh-archive-clean
