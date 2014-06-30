@@ -23,7 +23,7 @@ FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 
 ifneq ($(REMOTE_SERVER),)
-remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
+remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh -t $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
 remote-maybe=$1
 endif
@@ -68,7 +68,8 @@ $(RESOURCES_DIR)/u-boot.elf: gnu-tools | $(RESOURCES_DIR)
 	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc")
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
-linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
+# linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
+linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
 linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
 GIT_PROJECTS += linux
 
