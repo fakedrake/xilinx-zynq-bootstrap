@@ -143,7 +143,7 @@ ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
 
-$(RESOURCES_DIR)/ramdisk.img: filesystem resources | $(DRAFTS_DIR)
+$(RESOURCES_DIR)/ramdisk.img: filesystem | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	@echo "Building ramdisk..."
 	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$((`du -s $(FILESYSTEM_ROOT) | awk '{print $$1}'`+1000)))
 	$(call remote-maybe, mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
