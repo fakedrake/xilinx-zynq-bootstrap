@@ -1,20 +1,24 @@
 PATH:=$(PATH):$(GNU_TOOLS_BIN)
 
 # ThinkLCDML
-thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
+# thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
+thinklcdml-git-repo = /tools/GITROOT/Tsi_ThinkLCDML_driver.git/
+thinklcdml-git-checkout = refactor
 GIT_PROJECTS += thinklcdml
 TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
 
-thinklcdml-build: $(TLCDML_MODULE)
+thinklcdml-build: $(TLCDML_MODULE) | thinklcdml
 
-$(TLCDML_MODULE): linux-lazy thinklcdml | $(MODULES_DIR)
-	cd $(SOURCES_DIR)/thinklcdml-git && \
-	./builder.sh --root $(SOURCES_DIR)/../
+# This is aware of the kernel headers
+$(TLCDML_MODULE): | linux-build thinklcdml $(MODULES_DIR)
+	$(call remote-maybe, \
+		cd $(SOURCES_DIR)/thinklcdml-git && \
+		make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LINUX_HEADERS=$(SOURCES_DIR)/linux-git CONFIG_DEBUG_SECTION_MISMATCH=y)
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
-	cat $(MODULES_DIR)/modules.dep | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep
+#	cat $(MODULES_DIR)/modules.dep | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep
 
 thinklcdml-clean:
-	cd $(SOURCES_DIR)/thinklcdml-git && make clean
+	make clean -C $(SOURCES_DIR)/thinklcdml-git
 
 # Think2D
 think2d-git-repo="git@github.com:fakedrake/Think2D"

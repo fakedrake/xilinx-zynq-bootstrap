@@ -14,9 +14,13 @@ $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
 
+## The xilinx commit that works
 # linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
 # linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
+
 linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
+# Comment this out if you intend to push stuff
+# linux-git-clone-opts = --depth=20
 GIT_PROJECTS += linux
 
 KERNEL_CONFIG=xilinx_zynq_android_defconfig
@@ -33,7 +37,6 @@ $(DTB_TREE):
 $(RESOURCES_DIR)/%Image: $(RESOURCES_DIR)/u-boot.elf | linux gnu-tools $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	$(call remote-maybe, \
-	cd $(SOURCES_DIR)/linux-git; \
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) $(KERNEL_CONFIG) ; \
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 $*Image; \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) $(KERNEL_CONFIG) -C $(SOURCES_DIR)/linux-git && \
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 $*Image -C $(SOURCES_DIR)/linux-git && \
 	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/$*Image $(RESOURCES_DIR)/$*Image)

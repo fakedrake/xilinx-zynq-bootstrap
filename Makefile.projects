@@ -5,21 +5,28 @@ show-projects:
 	@echo "Archive Projects: $(TAR_PROJECTS)"
 
 # Have repositories
+
+# Git variables
+#
+# <project>-git-repo - URI of the repo to clone
+# <project>-git-checkout - Something to checkout (commit/branch/etc)
+# <project>-git-clone-opts - Extra options for cloning
 .PHONY:
 .SECONDEXPANSION :
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git
 
-$(SOURCES_DIR)/%-git : force
+$(SOURCES_DIR)/%-git :
 	$(call remote-maybe, if [ ! -d $@ ] || [ -z "$(force-$*-clone)" ]; then \
-		git clone --depth 20 $($*-git-repo) $@ ; \
-		[ -n "$($*-git-commit)" ] && git checkout $($*-git-commit) || echo "Nothing to checkout"; \
+		git clone $($*-git-clone-opts) $($*-git-repo) $@ && \
+		cd $@ && \
+		[ -n "$($*-git-checkout)" ] && git checkout $($*-git-checkout) || echo "Nothing to checkout"; \
 	fi)
 
 %-git-purge:
 	$(call remote-maybe, rm -rf $(SOURCES_DIR)/$*-git)
 
 .PHONY:
-%-clean:
+%-git-clean:
 	$(call remote-maybe, cd $(SOURCES_DIR)/$*-git && $(MAKE) clean)
 
 %-distclean:
