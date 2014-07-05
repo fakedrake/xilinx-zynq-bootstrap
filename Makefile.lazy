@@ -1,0 +1,25 @@
+# Lazies
+#
+# So that we do not configure everything over and over, I touch
+# something in lazy/ and you want to remove it to run lazy
+# dependencies.
+#
+# I will just do lazies locally for no particular reasons
+.SECONDEXPANSION:
+$(LAZY_DIR)/%: $(LAZY_DIR) $$*-build
+	touch $@
+
+.SECONDEXPANSION:
+%-lazy: $(LAZY_DIR)/$$*
+	echo "Lazy $@, createing $(LAZY_DIR)/$*"
+
+.SECONDEXPANSION:
+%-shallow-lazy:
+	echo "Avoiding build, just creating $^"
+	touch $(LAZY_DIR)/$*
+
+%-clean-lazy:
+	rm -rf $(LAZY_DIR)/$*
+
+all-clean-lazy:
+	rm -rf $(LAZY_DIR)
