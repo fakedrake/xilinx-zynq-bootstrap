@@ -85,27 +85,35 @@ filesystem-clean:
 ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
-
+comma=,
 $(RESOURCES_DIR)/ramdisk.img:  $(FILESYSTEM_ROOT)/fs_update | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	@echo "Building ramdisk..."
 	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$(($$(du -s $(FILESYSTEM_ROOT) | awk "{print \$$1}") + 1000)))
-	$(call remote-maybe, mke2fs -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
+	$(call remote-maybe, mke2fs -t ext2 -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
 	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
 
 	$(call remote-maybe, mkdir $(DRAFTS_DIR)/ramdisk)
+	$(call remote-maybe, chmod a+w resources/ramdisk.img)
 	@echo "Sudo is used to mount ramdisk..."
-	$(call remote-maybe, sudo mount -o loop $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo mount -v -t ext2 -o loop$(comma)rw $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
+
 	$(call remote-maybe, sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/)
 	$(call remote-maybe, sudo umount $(DRAFTS_DIR)/ramdisk/)
 	$(call remote-maybe, rmdir $(DRAFTS_DIR)/ramdisk/)
 
-ramdisk-clean:
+ramdisk-umount:
 	$(call remote-maybe, [ "$$(mount -l | grep $(DRAFTS_DIR)/ramdisk)" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
+
+ramdisk-clean: ramdisk-umount
 	$(call remote-maybe, rm -rf $(DRAFTS_DIR)/ramdisk)
-	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/ramdisk.img.*)
+	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/*ramdisk.img*)
 
 $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
 	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz)
 
 $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
 	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz)
+
+ramdisk-dev:
+	$(MAKE) ramdisk-clean
+	$(MAKE) ramdisk-board

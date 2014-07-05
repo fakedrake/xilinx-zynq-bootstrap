@@ -12,12 +12,12 @@
 # XILINX_BIN_PATH=$XLNX/ISE_DS/EDK/bin/lin
 # XILINX_BIN_PATH64=$XLNX/ISE_DS/EDK/bin/lin64
 
-REMOTE_XMD="ssh grey"
+REMOTE_XMD="ssh cperivol@grey"
 XMD=/opt/Xilinx/SDK/2013.3/bin/lin64/xmd
 
 function fail {
     echo "[ERROR] Error while $1"
-    exit 0
+    exit 1
 }
 
 read -d '' HELP_MESSAGE <<EOF
@@ -45,7 +45,7 @@ function setup_xmd {
 
     open_xmd="$($REMOTE_XMD pgrep xmd)"
     if [ -n "$open_xmd" ]; then
-	fail "Looks like another xmd is running with pid=$open_xmd. Found with: $REMOTE_XMD pgrep xmd"
+	fail "Looks like another xmd is running with pid=$open_xmd. Try: $REMOTE_XMD kill $open_xmd"
     fi
 
     if [ -n "$XMD" ]; then
@@ -127,7 +127,6 @@ source $ps7_init_tcl
 ps7_init
 init_user
 source $stub_tcl
-debugconfig -memory_access_check disable
 target 64
 
 dow $ubootelf
@@ -143,12 +142,8 @@ function boot_linux {
     # In order to have interactive output you may want to make a named pipe for this
     print_xmd_commands | tee -a $LOG_FILE | $XMD || fail "sending images to device"
 
-    # sleep 1
-
-    # echo -e "\n" > $SERIAL
-
-    # sleep 4
-    # echo "bootm 0x30000000 0x20000000 0x2A000000" > $SERIAL
+    sleep 5
+    echo "bootm 0x30000000 0x20000000 0x2A000000" > $SERIAL
 }
 
 function minicom {
@@ -166,7 +161,7 @@ function main
     boot_linux
     echo "Ending Script" > $LOG_FILE
 
-    [ -z "$no_minicom" ] && minicom
+    [ -z "$no_minicom" ] && minicom || true
 }
 
 while [[ $# -gt 0 ]]; do
