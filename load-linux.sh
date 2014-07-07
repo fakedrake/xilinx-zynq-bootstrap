@@ -108,6 +108,7 @@ function reset_device
     echo -e "connect arm hw\ntarget 64\nrst" | $XMD
 }
 
+ramdisk_addr='use print_xmd_commands'
 function print_xmd_commands
 {
     resources=$(pwd)/resources
@@ -132,18 +133,30 @@ target 64
 dow $ubootelf
 
 dow -data $uimage	0x30000000
-dow -data $ramdisk	0x20000000
+"
+
+    if ! [ "$ramdisk_addr" = '-' ]; then
+	echo "dow -data $ramdisk	0x20000000"
+    fi
+
+    echo "
 dow -data $dtb		0x2A000000
 con
 "
 }
 
 function boot_linux {
+    if [ "$no_ramdisk" = "y" ]; then
+	ramdisk_addr='-'
+    fi
+
     # In order to have interactive output you may want to make a named pipe for this
     print_xmd_commands | tee -a $LOG_FILE | $XMD || fail "sending images to device"
 
     sleep 5
-    echo "bootm 0x30000000 0x20000000 0x2A000000" > $SERIAL
+    if ! [ "$no_boot" = 'y' ];  then
+	echo "bootm 0x30000000 $ramdisk_addr 0x2A000000" | tee $SERIAL
+    fi
 }
 
 function minicom {
@@ -192,6 +205,10 @@ while [[ $# -gt 0 ]]; do
 	    exit 0;;
 	'--no-minicom')
 	    no_minicom="y";;
+	'--no-ramdisk')
+	    no_ramdisk="y";;
+	'--no-boot')
+	    no_boot="y";;
 	'--help')
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
