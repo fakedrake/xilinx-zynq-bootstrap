@@ -1,3 +1,5 @@
+NFS_ROOT="/srv/nfs"
+
 # Busybox
 busybox-git-repo="git://git.busybox.net/busybox"
 GIT_PROJECTS += busybox
@@ -36,14 +38,11 @@ FS_DIRS = $(FILESYSTEM_ROOT)/lib  \
 
 FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/inittab \
-	$(FILESYSTEM_ROOT)/etc/passwd \
-	$(FILESYSTEM_ROOT)/lib/copied_from_gnutools \
-	$(FILESYSTEM_ROOT)/sbin/copied_from_gnutools \
-	$(FILESYSTEM_ROOT)/usr/bin/copied_from_gnutools \
-	$(FILESYSTEM_ROOT)/usr/lib/copied_from_gnutools \
-	$(FILESYSTEM_ROOT)/usr/libexec/copied_from_gnutools \
-	$(FILESYSTEM_ROOT)/usr/sbin/copied_from_gnutools  \
-	$(FILESYSTEM_ROOT)/usr/share/copied_from_gnutools
+	$(FILESYSTEM_ROOT)/etc/init.d/rcS \
+	$(FILESYSTEM_ROOT)/etc/passwd
+
+libc-install: | gnu-tools $(FILESYSTEM_ROOT)
+	$(call remote-maybe, rsync -azvr --exclude "*locale/" --exclude "*locale/" $(GNU_TOOLS_LIBC)/* $(FILESYSTEM_ROOT))
 
 $(FS_DIRS):
 	$(call remote-maybe, [ ! -d $@ ] && mkdir -p $@ || echo "$@ is there!")
@@ -53,21 +52,19 @@ $(FILESYSTEM_ROOT)/init.sh:
 
 filesystem-nossh: $(FILESYSTEM_ROOT)/fs_update
 
-$(FILESYSTEM_ROOT)/%/copied_from_gnutools: | $(FILESYSTEM_ROOT)
-	$(call remote-maybe, cp -p $(GNU_TOOLS_UTILS)/libc/$*/* $(FILESYSTEM_ROOT)/$*/ || true)
-	$(call remote-maybe, find $(GNU_TOOLS_UTILS)/libc/$*/ > $@)
-
 $(FILESYSTEM_ROOT)/etc/%: | $(FILESYSTEM_ROOT)
 	$(call remote-maybe, cp $(DATA_DIR)/$* $(FILESYSTEM_ROOT)/etc/$*)
 
 $(FILESYSTEM_ROOT)/etc/init.d/rcS:| $(FILESYSTEM_ROOT)
+	$(call remote-maybe, cp $(DATA_DIR)/rcS $@)
 	$(call remote-maybe, chmod 755 $@)
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
-	$(call remote-maybe, [ "$$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ] || sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS)
+	if [ "$$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ]; then \
+		sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS \
+	fi
 
-$(FILESYSTEM_ROOT)/fs_update:  $(FS_DIRS) $(FS_FILES)  $(FILESYSTEM_ROOT)/init.sh $(FILESYSTEM_ROOT)/busybox_update | $(FILESYSTEM_ROOT)
+$(FILESYSTEM_ROOT)/fs_update: $(FS_DIRS) $(FS_FILES) $(FILESYSTEM_ROOT)/busybox_update | $(FILESYSTEM_ROOT) libc-install
 	@echo "Building filesystem"
-
 # Strip debug symbols
 ifneq ($(DEBUG_LIBS),y)
 	$(call remote-maybe, for i in $(FILESYSTEM_ROOT)/lib/*; do \
@@ -85,6 +82,14 @@ filesystem-clean:
 ramdisk: ramdisk-board ramdisk-qemu
 ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
+
+# Use this to update NFS_ROOT
+SYNC_CMD=rsync -azvr --delete $(FILESYSTEM_ROOT)/* $(NFS_ROOT)
+nfsroot:
+	if ! $(SYNC_CMD); then \
+		sudo $(SYNC_CMD) ; \
+	fi
+
 comma=,
 $(RESOURCES_DIR)/ramdisk.img:  $(FILESYSTEM_ROOT)/fs_update | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	@echo "Building ramdisk..."
@@ -93,7 +98,7 @@ $(RESOURCES_DIR)/ramdisk.img:  $(FILESYSTEM_ROOT)/fs_update | $(DRAFTS_DIR) $(RE
 	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
 
 	$(call remote-maybe, mkdir $(DRAFTS_DIR)/ramdisk)
-	$(call remote-maybe, chmod a+w resources/ramdisk.img)
+	$(call remote-maybe, chmod a+w $(RESOURCES_DIR)/ramdisk.img)
 	@echo "Sudo is used to mount ramdisk..."
 	$(call remote-maybe, sudo mount -v -t ext2 -o loop$(comma)rw $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
 
@@ -109,10 +114,10 @@ ramdisk-clean: ramdisk-umount
 	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/*ramdisk.img*)
 
 $(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
-	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $(RESOURCES_DIR)/ramdisk.img.gz)
+	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $@)
 
 $(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
-	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $(RESOURCES_DIR)/uramdisk.img.gz)
+	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $@)
 
 ramdisk-dev:
 	$(MAKE) ramdisk-clean
