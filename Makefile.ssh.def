@@ -1,32 +1,39 @@
-SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)
-ZLIB_INSTALL_ROOT=$(FILESYSTEM_ROOT)
+SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)/usr
+ZLIB_INSTALL_ROOT=$(FILESYSTEM_ROOT)/usr
+
+$(SSH_INSTALL_ROOT) $(ZLIB_INSTALL_ROOT): $(FILESYSTEM_ROOT)
+	if ! [ -d $@ ]; then mkdir $@; fi
 
 zlib-git-repo="https://github.com/madler/zlib"
 GIT_PROJECTS += zlib
 
-zlib-build: $(FILESYSTEM_ROOT)/lib/libz.a
+zlib-build: $(ZLIB_INSTALL_ROOT)/lib/libz.a
 
-$(FILESYSTEM_ROOT)/lib/libz.a: | zlib gnu-tools  $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
-	cd $(SOURCES_DIR)/zlib-git/; \
-	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl,-soname,libz.so.1" ./configure --shared --prefix=$(ZLIB_INSTALL_ROOT); \
-	make; \
-	make install;
+comma=,
+$(ZLIB_INSTALL_ROOT)/lib/libz.a: | zlib gnu-tools  $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
+	$(call remote-maybe, cd $(SOURCES_DIR)/zlib-git/; \
+	CC="$(CROSS_COMPILE)gcc" LDSHARED="$$CC -shared -Wl$(comma)-soname$(comma)libz.so.1" ./configure --shared --prefix=$(ZLIB_INSTALL_ROOT))
+	$(call remote-maybe, make -C $(SOURCES_DIR)/zlib-git/)
+	$(call remote-maybe, make -C $(SOURCES_DIR)/zlib-git/ install)
+
+zlib-clean:
+	rm -rf $(ZLIB_INSTALL_ROOT)/lib/libz.a
 
 openssl-git-repo="git://git.openssl.org/openssl.git"
 GIT_PROJECTS += openssl
 
-openssl-build: $(FILESYSTEM_ROOT)/lib/libssl.a
+openssl-build: zlib-build  $(ZLIB_INSTALL_ROOT)/lib/libssl.a
 
-$(FILESYSTEM_ROOT)/lib/libssl.a: | openssl gnu-tools filesystem-nossh zlib-build $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
-	@echo "Cross compiling openssl: $(CROSS_COMPILE)"
-	# or maybe linux-generic32 or linux-armv4
-	cd $(SOURCES_DIR)/openssl-git/; \
-	 CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" AR="$(CROSS_COMPILE)ar" RANLIB="$(CROSS_COMPILE)ranlib" CFLAGS="--sysroot=$(FILESYSTEM_ROOT)" ./Configure dist zlib no-asm --prefix="$(SSH_INSTALL_ROOT)"; \
-	make CPATH="$(FILESYSTEM_ROOT)/include" CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" ; \
-	make all install_sw	# Installing documentation is not very stable for now.
+$(SSH_INSTALL_ROOT)/lib/libssl.a: | openssl gnu-tools filesystem-nossh $(FILESYSTEM_ROOT) $(SSH_INSTALL_ROOT)
+	$(call remote-maybe, \
+		cd $(SOURCES_DIR)/openssl-git/; \
+		CPATH="$(SSH_INSTALL_ROOT)/include" CROSS_COMPILE=$(CROSS_COMPILE) \
+		CC="gcc --sysroot=$(SSH_INSTALL_ROOT)" \
+		./Configure dist zlib no-asm --prefix="$(SSH_INSTALL_ROOT)" )
+	$(call remote-maybe, make -C $(SOURCES_DIR)/openssl-git/ all install_sw )
 
 openssl-check-libcrypto:
-	$(CROSS_COMPILE)objdump -S $(FILESYSTEM_ROOT)/lib/libcrypto.a > /dev/null
+	$(CROSS_COMPILE)objdump -S $(SSH_INSTALL_ROOT)/lib/libcrypto.a > /dev/null
 
 openssl-distclean:
 	cd $(SOURCES_DIR)/openssl-git/ && make dclean
@@ -35,11 +42,20 @@ openssl-distclean:
 # git.
 openssh-tar-url="ftp://ftp.cc.uoc.gr/mirrors/OpenBSD/OpenSSH/portable/openssh-6.2p2.tar.gz"
 TAR_PROJECTS += openssh
-openssh-build: $(FILESYSTEM_ROOT)/bin/ssh
+openssh-build: $(SSH_INSTALL_ROOT)/bin/ssh
 
-$(FILESYSTEM_ROOT)/bin/ssh: | openssh gnu-tools openssl-build zlib-build $(SSH_INSTALL_ROOT) $(FILESYSTEM_ROOT)
-	echo "Building $openssh-archive"
-	cd $(SOURCES_DIR)/openssh-archive/*/; ./configure --prefix=$(FILESYSTEM_ROOT) --host=$(GNU_TOOLS_HOST) --with-privsep-path=$(FILESYSTEM_ROOT)/var/empty --with-libs --with-zlib=$(SSH_INSTALL_ROOT) --with-ssl-dir=$(SSH_INSTALL_ROOT) --disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip" && \
-	make && make install-nokeys
+$(SSH_INSTALL_ROOT)/bin/ssh: | openssh gnu-tools openssl-build zlib-build $(SSH_INSTALL_ROOT)
+	@echo "Building openssh-archive"
+	$(call remote-maybe, \
+	cd $(SOURCES_DIR)/openssh-archive/*/ && \
+	./configure CROSS_COMPILE=$(CROSS_COMPILE) \
+		CC="$(CROSS_COMPILE)gcc --sysroot=$(FILESYSTEM_ROOT)" \
+		--prefix=$(SSH_INSTALL_ROOT) \
+		--host=$(GNU_TOOLS_HOST) \
+		--with-privsep-path=$(FILESYSTEM_ROOT)/var/empty \
+		--with-libs --with-zlib=$(ZLIB_INSTALL_ROOT) \
+		--with-ssl-dir=$(SSH_INSTALL_ROOT) \
+		--disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip")
+	$(call remote-maybe, make -C $(SOURCES_DIR)/openssh-archive/*/ && make install-nokeys -C $(SOURCES_DIR)/openssh-archive/*/)
 
 openssh-clean: openssh-archive-clean
