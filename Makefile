@@ -11,7 +11,7 @@ RESOURCES_DIR=$(ROOT_DIR)/resources
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
 LAZY_DIR=$(ROOT_DIR)/lazy
-MODULES_DIR=$(FILESYSTEM_ROOT)/lib/modules/3.9.0-xilinx/
+MODULES_DIR=$(FILESYSTEM_ROOT)/lib/modules/$(shell cat $(SOURCES_DIR)/linux-git/include/config/kernel.release)
 
 DEBUG_LIBS=y
 
@@ -36,7 +36,7 @@ test_remote:
 force: ;
 
 # Targets
-DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(MODULES_DIR)
+DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(MODULES_DIR) $(FILESYSTEM_ROOT)
 $(DIRECTORIES):
 	[ -d $@ ] || mkdir -p $@
 
