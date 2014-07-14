@@ -12,8 +12,8 @@
 # XILINX_BIN_PATH=$XLNX/ISE_DS/EDK/bin/lin
 # XILINX_BIN_PATH64=$XLNX/ISE_DS/EDK/bin/lin64
 
-REMOTE_XMD="ssh cperivol@grey"
-XMD=/opt/Xilinx/SDK/2013.3/bin/lin64/xmd
+REMOTE_XMD=${REMOTE_XMD:-"ssh cperivol@grey"}
+XMD=${XMD:-/opt/Xilinx/SDK/2013.3/bin/lin64/xmd}
 
 function fail {
     echo "[ERROR] Error while $1"
@@ -39,73 +39,90 @@ EOF
 
 LOG_FILE="load-linux.log"
 
+# Select and run xmd, with --print show the command.
+function ll_xmd {
+    mode="$1"
 
-function setup_xmd {
     # Get the xmd executable
-
-    open_xmd="$($REMOTE_XMD pgrep xmd)"
-    if [ -n "$open_xmd" ]; then
-	fail "Looks like another xmd is running with pid=$open_xmd. Try: $REMOTE_XMD kill $open_xmd"
-    fi
-
-    if [ -n "$XMD" ]; then
-	echo "Override any xmd detection with '$XMD'";
-    elif [ -d $XILINX_BIN_PATH64 ] && [ $(uname -p) = 'x86_64' ]; then
-	XMD=$XILINX_BIN_PATH64/xmd
-    elif [ -d $XILINX_BIN_PATH ]; then
-	XMD=$XILINX_BIN_PATH/xmd
-    else
-	echo "Failed to find xmd at $XILINX_BIN_PATH64 and $XILINX_BIN_PATH, trying \$PATH"
-	# Try the PATH
-	XMD=$(which xmd)
-    fi
-
     if [ -n "$REMOTE_XMD" ]; then
-	XMD="$REMOTE_XMD $XMD"
+	open_xmd="$($REMOTE_XMD -n pgrep xmd)"
+    else
+	open_xmd="$(pgrep xmd)"
     fi
 
+    if [ -n "$open_xmd" ]; then
+    	fail "Looks like another xmd is running with pid=$open_xmd. Try: $REMOTE_XMD kill $open_xmd"
+    fi
+
+    # Find a proper xmd
+    if [ -n "$XMD" ]; then
+    	[ ! "$mode" == "--print" ] && echo "Xmd already setup to '$XMD'";
+    elif [ -d $XILINX_BIN_PATH64 ] && [ $(uname -p) = 'x86_64' ]; then
+    	XMD=$XILINX_BIN_PATH64/xmd
+    elif [ -d $XILINX_BIN_PATH ]; then
+    	XMD=$XILINX_BIN_PATH/xmd
+    else
+    	echo "Failed to find xmd at $XILINX_BIN_PATH64 and $XILINX_BIN_PATH, trying \$PATH"
+    	# Try the PATH
+    	XMD=$(which xmd)
+    fi
 
     if [ -z "$XMD" ]; then
-	echo "No xmd found."
-	exit 0
+	fail "No xmd found."
     fi
-    echo "XMD: $XMD"
+
+    case "$mode" in
+	"--print")
+	    echo "$REMOTE_XMD $XMD";;
+	"--interactive")
+	    eval "$REMOTE_XMD $XMD";;
+	*)
+	    mkfifo /tmp/pipe
+	    tee pipe
+	    cat pipe | eval "$REMOTE_XMD $XMD"
+	    rm /tmp/pipe;;
+    esac;
 }
 
-function setup_serial
+# Pipe here what you need in the serial, with --print just show the device
+function ll_serial
 {
+    print_p="$1"
+
     if [ ! $SERIAL ]; then
 	SERIAL=$( ls -d /dev/* | grep ttyUSB | head -1 )
-	echo "Using serial: $SERIAL"
     fi
 
 
     if [ ! $SERIAL ] || [ ! -c $SERIAL ]; then
-	echo "No serial port found or the provided is invalid."
-	exit 0
+	fail "No serial port found or the provided is invalid."
     fi
 
-    [ ! -w $SERIAL ] && echo "Serial $SERIAL is not writeable. Try 'sudo chmod a+w $SERIAL'" && exit 0
-    [ ! -r $SERIAL ] && [ "$RUN_MINICOM" = "true" ] && \
-    echo "Serial $SERIAL is not readable. Cannot open minicom on it. Try 'sudo chmod a+rw $SERIAL'" && exit 0
+    [ ! -w $SERIAL ] && fail "Serial $SERIAL is not writeable. Try 'sudo chmod a+rw $SERIAL'"
+
+    if [ "$print_p" = "--print" ]; then
+	echo "$SERIAL"
+    else
+	tee "$SERIAL"
+    fi
 }
 
 function xmd_shell
 {
     if [ $(command -v rlwrap) ]; then
 	echo "Using rlwrap for history and completion, you are welcome."
-	rlwrap $XMD
+	eval rlwrap $(ll_xmd --print)
     else
 	echo "rlwrap not found, running plain xmd"
-	$XMD
+	ll_xmd --interactive
     fi
 }
 
-
 function reset_device
 {
-    echo "echo \"Device reset commanded by $(whoami)!\"" > $SERIAL
-    echo -e "connect arm hw\ntarget 64\nrst" | $XMD
+    echo "echo \"Device reset commanded by $(whoami)!\""  | ll_serial
+    echo -e "connect arm hw\ntarget 64\nrst" | ll_xmd
+    echo  "Device reset!"
 }
 
 ramdisk_addr='use print_xmd_commands'
@@ -118,7 +135,7 @@ function print_xmd_commands
 
     uimage=$resources/uImage
     ramdisk=$resources/uramdisk.img.gz
-    dtb=$resources/zynq-zc702.dtb
+    dtb=$resources/devicetree.dtb
     ubootelf=$resources/u-boot.elf
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
@@ -141,26 +158,30 @@ dow -data $uimage	0x30000000
 
     echo "
 dow -data $dtb		0x2A000000
+$extra_xmd
 con
 "
 }
 
-function boot_linux {
+function load_linux {
     if [ "$no_ramdisk" = "y" ]; then
 	ramdisk_addr='-'
     fi
 
     # In order to have interactive output you may want to make a named pipe for this
-    print_xmd_commands | tee -a $LOG_FILE | $XMD || fail "sending images to device"
+    print_xmd_commands | ll_xmd || fail "sending images to device"
+}
 
-    sleep 5
-    if ! [ "$no_boot" = 'y' ];  then
-	echo "bootm 0x30000000 $ramdisk_addr 0x2A000000" | tee $SERIAL
+function boot_linux {
+    if [ -n "$bootargs" ]; then
+	echo "setenv bootargs $bootargs" | ll_serial
     fi
+
+    echo "bootm 0x30000000 $ramdisk_addr 0x2A000000" | ll_serial
 }
 
 function minicom {
-    MINICOM_CMD="/usr/bin/minicom -D $SERIAL -b 115200"
+    MINICOM_CMD="/usr/bin/minicom -D $(ll_serial --print) -b 115200"
     echo "Running $MINICOM_CMD"
     $MINICOM_CMD
 }
@@ -169,44 +190,51 @@ function minicom {
 function main
 {
     echo "Beginning Script" > $LOG_FILE
-    setup_serial
-    setup_xmd
-    boot_linux
+    if ! [ "$no_load" = 'y' ];  then
+        load_linux
+    fi
+
+    if ! [ "$no_boot" = 'y' ];  then
+	sleep 5
+	boot_linux
+    fi
     echo "Ending Script" > $LOG_FILE
 
-    [ -z "$no_minicom" ] && minicom || true
+    if ! [ "$no_minicom" = 'y' ]; then
+	minicom
+    fi
 }
 
 while [[ $# -gt 0 ]]; do
     case $1 in
 	'--reset')
-	    setup_serial;
-	    setup_xmd;
 	    reset_device;
 	    exit 0;;
 	'--minicom')
-	    setup_serial;
-	    minicom;
+	    setup_serial;minicom;
 	    exit 0;;
 	'--which-serial')
-	    setup_serial;
-	    echo "$SERIAL"
+	    ll_serial --print;
 	    exit 0;;
 	'--which-xmd')
-	    setup_xmd;
-	    echo "$XMD"
+	    ll_xmd --print
 	    exit 0;;
 	'--xmd-shell')
-	    setup_xmd;
 	    xmd_shell;
 	    exit 0;;
-	'--xmd-commands')
+	'--show-xmd-commands')
 	    print_xmd_commands;
 	    exit 0;;
+	'--bootargs')
+	    shift; bootargs="$1";;
+	'--xmd-extra')
+	    shift; extra_xmd="$1";;
 	'--no-minicom')
 	    no_minicom="y";;
 	'--no-ramdisk')
 	    no_ramdisk="y";;
+	'--no-load')
+	    no_load="y";;
 	'--no-boot')
 	    no_boot="y";;
 	'--help')
