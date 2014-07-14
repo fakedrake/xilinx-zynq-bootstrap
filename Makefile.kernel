@@ -3,15 +3,19 @@
 uboot-git-repo="git://git.xilinx.com/u-boot-xlnx.git"
 GIT_PROJECTS += uboot
 
+uboot-rebuild:
+	rm -f $(RESOURCES_DIR)/u-boot.elf
+	$(MAKE) uboot-build
+
 uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 	@echo "UBoot built successfully!"
 
 $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 	@echo "Building U-Boot"
-	$(call remote-maybe, $(call)cd $(SOURCES_DIR)/uboot-git ; \
-	$(MAKE) zynq_zc70x_config CC="$(GNU_TOOLS_PREFIX)gcc"; \
-	$(MAKE)  OBJCOPY="$(GNU_TOOLS_PREFIX)objcopy" LD="$(GNU_TOOLS_PREFIX)ld" AR="$(GNU_TOOLS_PREFIX)ar" CC="$(GNU_TOOLS_PREFIX)gcc")
-	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
+	$(call remote-maybe, \
+	$(MAKE) -C $(SOURCES_DIR)/uboot-git zynq_zc70x_config CROSS_COMPILE="$(GNU_TOOLS_PREFIX)" && \
+	$(MAKE) -C $(SOURCES_DIR)/uboot-git CROSS_COMPILE="$(GNU_TOOLS_PREFIX)" && \
+	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf)
 
 ## The xilinx commit that works
 # linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
@@ -24,8 +28,8 @@ GIT_PROJECTS += linux
 
 KERNEL_CONFIG=thinksilicon_zynq_defconfig
 
-DTB_TREE=$(RESOURCES_DIR)/zynq-zc702.dtb
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-tsi.dts
+DTB_TREE=$(RESOURCES_DIR)/devicetree.dtb
 
 linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
 
@@ -38,6 +42,12 @@ linux-clean:
 
 $(DTB_TREE): $(DTS_TREE)
 	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE))
+
+show-dts: $(DTB_TREE)
+	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dtb -O dts $(DTB_TREE))
+
+linux-version:
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) kernelrelease -C $(SOURCES_DIR)/linux-git
 
 # This means either uImage or zImage or whatever.
 $(RESOURCES_DIR)/%Image: $(RESOURCES_DIR)/u-boot.elf | linux gnu-tools $(RESOURCES_DIR)
