@@ -40,6 +40,7 @@ EOF
 LOG_FILE="load-linux.log"
 
 # Defaults
+load_bitstream='y'
 load_uimage='y'
 load_ramdisk=''
 no_boot=''
@@ -154,6 +155,11 @@ function print_xmd_commands
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
 
+    if [ -n "$load_bitstream" ]; then
+	bitstream=$resources/bitstream.bit
+	echo "fpga -f $bitstream"
+    fi
+
     echo "connect arm hw
 source $ps7_init_tcl
 ps7_init
@@ -257,6 +263,8 @@ while [[ $# -gt 0 ]]; do
 	    shift; extra_xmd="$1";;
 	'--no-boot')
 	    no_boot="y";;
+	'--no-bitstream')
+	    load_bitstream='';;
 	'--no-minicom')
 	    run_minicom="";;
 	'--no-ramdisk')

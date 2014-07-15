@@ -85,6 +85,7 @@ ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
 
 # Use this to update NFS_ROOT
 SYNC_CMD=rsync -azvr --delete $(FILESYSTEM_ROOT)/* $(NFS_ROOT)
+.PHONY:
 nfsroot:
 	if ! $(SYNC_CMD); then \
 		sudo $(SYNC_CMD) ; \
