@@ -39,6 +39,17 @@ EOF
 
 LOG_FILE="load-linux.log"
 
+# Defaults
+load_uimage='y'
+load_ramdisk=''
+no_boot=''
+run_minicom='y'
+
+iface="eth0"
+clientip="192.168.1.50"
+
+
+
 # Select and run xmd, with --print show the command.
 function ll_xmd {
     mode="$1"
@@ -103,7 +114,11 @@ function ll_serial
     if [ "$print_p" = "--print" ]; then
 	echo "$SERIAL"
     else
-	tee "$SERIAL"
+	while read cmd; do
+	    echo "$cmd" | tr '\n' '; ' | tee > "$SERIAL"
+	    sleep 0.5;
+	done
+	echo -e "\n" > "$SERIAL"
     fi
 }
 
@@ -125,7 +140,6 @@ function reset_device
     echo  "Device reset!"
 }
 
-ramdisk_addr='use print_xmd_commands'
 function print_xmd_commands
 {
     resources=$(pwd)/resources
@@ -148,36 +162,21 @@ source $stub_tcl
 target 64
 
 dow $ubootelf
-
-dow -data $uimage	0x30000000
 "
 
-    if ! [ "$ramdisk_addr" = '-' ]; then
-	echo "dow -data $ramdisk	0x20000000"
+    if [ -n "$load_uimage" ]; then
+	echo "dow -data $uimage	0x30000000"
     fi
 
-    echo "
-dow -data $dtb		0x2A000000
-$extra_xmd
-con
-"
-}
-
-function load_linux {
-    if [ "$no_ramdisk" = "y" ]; then
-	ramdisk_addr='-'
+    if [ -n "$load_ramdisk" ]; then
+	echo "dow -data $ramdisk	$ramdisk_addr"
     fi
 
-    # In order to have interactive output you may want to make a named pipe for this
-    print_xmd_commands | ll_xmd || fail "sending images to device"
-}
-
-function boot_linux {
-    if [ -n "$bootargs" ]; then
-	echo "setenv bootargs $bootargs" | ll_serial
+    if [ -n "$load_devtree" ]; then
+	echo "dow -data $dtb		0x2A000000"
     fi
 
-    echo "bootm 0x30000000 $ramdisk_addr 0x2A000000" | ll_serial
+    echo -e "$extra_xmd\ncon";
 }
 
 function minicom {
@@ -186,21 +185,48 @@ function minicom {
     $MINICOM_CMD
 }
 
+if [ -n "$load_ramdisk" ]; then
+    ramdisk_addr="0x20000000"
+else
+    ramdisk_addr="-"
+fi
+
+
+function load_linux {
+    # In order to have interactive output you may want to make a named pipe for this
+    print_xmd_commands | ll_xmd || fail "sending images to device"
+}
+
+function uboot_commands {
+    echo -e "\nsetenv autoload no"			# Stop a possible autoboot
+    if [ -n "$bootargs" ]; then
+	echo "setenv bootargs $bootargs"
+    fi
+
+    if [ -n "$tftp_load" ]; then
+	hostip=$(ifconfig $iface | awk '($1=="inet"){split($2, ip, ":"); print ip[2]}')
+
+	echo "setenv ipaddr $clientip"
+	echo "setenv serverip $hostip"
+	echo "tftpboot 0x30000000 uImage"
+	echo "tftpboot 0x2a000000 devicetree.dtb"
+    fi
+
+    echo "bootm 0x30000000 $ramdisk_addr 0x2A000000"
+}
 
 function main
 {
     echo "Beginning Script" > $LOG_FILE
-    if ! [ "$no_load" = 'y' ];  then
-        load_linux
-    fi
+    load_linux
 
-    if ! [ "$no_boot" = 'y' ];  then
-	sleep 5
-	boot_linux
+    if [ -z "$no_boot" ];  then
+	#	sleep 5
+	uboot_commands | ll_serial
     fi
     echo "Ending Script" > $LOG_FILE
 
-    if ! [ "$no_minicom" = 'y' ]; then
+    if [ -n "$run_minicom" ]; then
 	minicom
     fi
 }
@@ -229,14 +255,29 @@ while [[ $# -gt 0 ]]; do
 	    shift; bootargs="$1";;
 	'--xmd-extra')
 	    shift; extra_xmd="$1";;
-	'--no-minicom')
-	    no_minicom="y";;
-	'--no-ramdisk')
-	    no_ramdisk="y";;
-	'--no-load')
-	    no_load="y";;
 	'--no-boot')
 	    no_boot="y";;
+	'--no-minicom')
+	    run_minicom="";;
+	'--no-ramdisk')
+	    load_ramdisk="";;
+	'--no-linux')
+	    load_linux='';;
+	"--no-devtree")
+	    load_devtree='';;
+	'--with-minicom')
+	    run_minicom="y";;
+	'--with-ramdisk')
+	    load_ramdisk="y";;
+	'--with-linux')
+	    load_uimage='y';;
+	"--with-devtree")
+	    load_devtree='y';;
+	"--tftp")
+	    tftp_load="y";
+	    load_devtree="";
+	    load_uimage="";
+	    load_ramdisk="";;
 	'--help')
 	    echo "$HELP_MESSAGE"
 	    exit 0;;
@@ -246,5 +287,6 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
 
 main
