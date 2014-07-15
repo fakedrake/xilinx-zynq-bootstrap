@@ -54,7 +54,3 @@ ioctler-clean:
 
 tsi-drivers: think2d-build thinklcdml-build ioctler-build
 tsi-drivers-clear: think2d-clean thinklcdml-clean ioctler-clean
-
-bitstream: $(RESOURCES_DIR)/bitstream.bit
-$(RESOURCES_DIR)/bitstream.bit: $(DATA_DIR)/bitstream.bit | $(RESOURCES_DIR)
-	cp $(DATA_DIR)/bitstream.bit $@

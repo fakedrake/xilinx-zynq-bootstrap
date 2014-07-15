@@ -51,6 +51,7 @@ include ./Makefile.qemu
 include ./Makefile.tsi
 include ./Makefile.projects
 include ./Makefile.lazy
+include ./Makefile.vars
 
 # Entry Points
 

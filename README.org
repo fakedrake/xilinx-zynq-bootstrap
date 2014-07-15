@@ -66,14 +66,26 @@
    #+END_EXAMPLE
 
 ** Nfsroot
-   For now we do not have proper nfsroot but there is a script you can
-   run to get root at your fs.
+   You need to setup the NFS server on the host side yourself. Usually
+   you can do that by installing the nfs server and then fixing up
+   /\/etc\/exports/ to have a line similar to this.
 
    #+BEGIN_EXAMPLE
-   /homes/zynqfs/init.sh
+   /srv/nfs *(rw,no_subtree_check,no_root_squash,insecure)
    #+END_EXAMPLE
 
-   That will run the init scripts as expected.
+   if you change the /srv/nfs path you will have to also set the
+   =NFS_ROOT= variable.
+
+   Then set up the boot arguments of linux to something like this
+
+   #+BEGIN_EXAMPLE
+   console=ttyPS0,115200n8 root=/dev/nfs rw nfsroot=192.168.1.22:/srv/nfs rw  earlyprintk ip=:::::eth0:dhcp
+   #+END_EXAMPLE
+
+   You can do this by editing the dts you are using (=DTS_TREE=
+   variable) or by passing the =--bootargs <bootargs>= to
+   /load-linux.sh/.
 
 ** Debug
    You may run =debug.sh <program-in-bin>= to debug something running
@@ -144,6 +156,14 @@
     | Digilent USB JTAG     | off      | on       |
     | Xilinx Platform Cable | on       | off      |
     | 20-pin Header         | off      | off      |
+
+* Load Linux script
+
+  To interact with a board you should use the load-linux.sh script. It
+  is becoming more and more sophisticated and can cover more than a
+  couple of cases. I can't hope to have documentation up to date with
+  it as it grows and changes very very fast. Check the swtch case at
+  the end of the file to see what you can do.
 
 * Notes
   MODULEDIR is absolute for host.

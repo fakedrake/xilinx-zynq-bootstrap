@@ -1,4 +1,7 @@
-sdk: $(RESOURCES_DIR)/stub.tcl $(RESOURCES_DIR)/ps7_init.tcl
+sdk: $(RESOURCES_DIR)/stub.tcl $(RESOURCES_DIR)/ps7_init.tcl $(RESOURCES_DIR)/bitstream.bit
 
-$(RESOURCES_DIR)/%.tcl :
+$(RESOURCES_DIR)/%.tcl : $(DATA_DIR)/%.tcl
 	$(call remote-maybe, cp $(DATA_DIR)/$*.tcl $@)
+
+$(RESOURCES_DIR)/bitstream.bit: $(DATA_DIR)/bitstream.bit | $(RESOURCES_DIR)
+	cp $(DATA_DIR)/bitstream.bit $@
