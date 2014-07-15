@@ -26,10 +26,12 @@ PYTHON_V=$(shell python --version 2>&1)
 
 .SECONDARY:
 $(TOOLS_DIR)/python: | $(TOOLS_DIR)
-	[ -f $@ ] && rm $@ || echo "No python, I'll link to the system one."
-	case "$(PYTHON_V)" in "Python 2.7."*) \
-		ln -s $(shell which python) $(TOOLS_DIR)/python;; esac;
+	if [ -n $(PYTHON) ]; then ln $(PYTHON) $@; fi
 
-	! [ -f $(TOOLS_DIR)/python ] && \
+	! [ -f $@ ] && \
+	case "$(PYTHON_V)" in "Python 2.7."*) \
+		ln -s $(shell which python) $@;; esac;
+
+	! [ -f $@ ] && \
 	case "$(PYTHON_V2)" in "Python 2.7."*) \
-		ln -s $(shell which python2) $(TOOLS_DIR)/python;; esac;
+		ln -s $(shell which python2) $@;; esac;
