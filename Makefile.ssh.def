@@ -1,8 +1,6 @@
-SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)/usr
+SSH_INSTALL_ROOT=$(FILESYSTEM_ROOT)
 ZLIB_INSTALL_ROOT=$(FILESYSTEM_ROOT)/usr
-
-$(SSH_INSTALL_ROOT) $(ZLIB_INSTALL_ROOT): $(FILESYSTEM_ROOT)
-	if ! [ -d $@ ]; then mkdir $@; fi
+DIRECTORIES += $(SSH_INSTALL_ROOT) $(ZLIB_INSTALL_ROOT)
 
 zlib-git-repo="https://github.com/madler/zlib"
 GIT_PROJECTS += zlib
@@ -57,5 +55,8 @@ $(SSH_INSTALL_ROOT)/bin/ssh: | openssh gnu-tools openssl-build zlib-build $(SSH_
 		--with-ssl-dir=$(SSH_INSTALL_ROOT) \
 		--disable-etc-default-login INSTALL="/usr/bin/install -c --strip-program=$(CROSS_COMPILE)strip")
 	$(call remote-maybe, make -C $(SOURCES_DIR)/openssh-archive/*/ && make install-nokeys -C $(SOURCES_DIR)/openssh-archive/*/)
+
+ssh-clean:
+	rm -rf $(SSH_INSTALL_ROOT)/bin/ssh
 
 openssh-clean: openssh-archive-clean

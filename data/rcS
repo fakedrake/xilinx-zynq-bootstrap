@@ -25,7 +25,7 @@ httpd -h /var/www
 echo "++ Starting ftp daemon"
 tcpsvd 0:21 ftpd ftpd -w /&
 
-echo "++ Starting dropbear (ssh) daemon"
-dropbear
+echo "++ Starting sshd daemon"
+sshd
 
 echo "rcS Complete"

@@ -33,8 +33,10 @@ FS_DIRS = $(FILESYSTEM_ROOT)/lib  \
 	$(FILESYSTEM_ROOT)/usr/lib \
 	$(FILESYSTEM_ROOT)/usr/libexec \
 	$(FILESYSTEM_ROOT)/usr/sbin  \
-	$(FILESYSTEM_ROOT)/usr/share
+	$(FILESYSTEM_ROOT)/usr/share \
+	$(MODULES_DIR)
 
+DIRECTORIES += $(FS_DIRS)
 
 FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/inittab \
@@ -44,18 +46,16 @@ FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 libc-install: | gnu-tools $(FILESYSTEM_ROOT)
 	$(call remote-maybe, rsync -azvr --exclude "*locale/" --exclude "*locale/" $(GNU_TOOLS_LIBC)/* $(FILESYSTEM_ROOT))
 
-$(FS_DIRS):
-	$(call remote-maybe, [ ! -d $@ ] && mkdir -p $@ || echo "$@ is there!")
 
-$(FILESYSTEM_ROOT)/init.sh:
+$(FILESYSTEM_ROOT)/init.sh: $(DATA_DIR)/fdinit.sh
 	$(call remote-maybe, cp $(DATA_DIR)/fdinit.sh $@ && chmod a+x $@)
 
 filesystem-nossh: $(FILESYSTEM_ROOT)/fs_update
 
-$(FILESYSTEM_ROOT)/etc/%: | $(FILESYSTEM_ROOT)
+$(FILESYSTEM_ROOT)/etc/%: $(DATA_DIR)/% | $(FILESYSTEM_ROOT)
 	$(call remote-maybe, cp $(DATA_DIR)/$* $(FILESYSTEM_ROOT)/etc/$*)
 
-$(FILESYSTEM_ROOT)/etc/init.d/rcS:| $(FILESYSTEM_ROOT)
+$(FILESYSTEM_ROOT)/etc/init.d/rcS: $(DATA_DIR)/rcS | $(FILESYSTEM_ROOT)
 	$(call remote-maybe, cp $(DATA_DIR)/rcS $@)
 	$(call remote-maybe, chmod 755 $@)
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."

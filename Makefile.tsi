@@ -1,5 +1,7 @@
 PATH:=$(PATH):$(GNU_TOOLS_BIN)
 
+.PHONY: force
+force:
 # ThinkLCDML
 # thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
 thinklcdml-git-repo = /tools/GITROOT/Tsi_ThinkLCDML_driver.git/
@@ -7,10 +9,10 @@ thinklcdml-git-checkout = refactor
 GIT_PROJECTS += thinklcdml
 TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
 
-thinklcdml-build: $(TLCDML_MODULE) | thinklcdml
+thinklcdml-build: $(TLCDML_MODULE) nfsroot
 
 # This is aware of the kernel headers
-$(TLCDML_MODULE): | linux-build thinklcdml $(MODULES_DIR)
+$(TLCDML_MODULE): force | linux-build thinklcdml $(MODULES_DIR)
 	$(call remote-maybe, \
 		cd $(SOURCES_DIR)/thinklcdml-git && \
 		make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LINUX_HEADERS=$(SOURCES_DIR)/linux-git CONFIG_DEBUG_SECTION_MISMATCH=y)
@@ -19,6 +21,7 @@ $(TLCDML_MODULE): | linux-build thinklcdml $(MODULES_DIR)
 
 thinklcdml-clean:
 	make clean -C $(SOURCES_DIR)/thinklcdml-git
+	rm $(TLCDML_MODULE)
 
 # Think2D
 think2d-git-repo="git@github.com:fakedrake/Think2D"

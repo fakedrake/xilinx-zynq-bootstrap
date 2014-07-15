@@ -1,8 +1,10 @@
 # /bin/ash
 #
 # Start an askfirst shell on the serial ports
-
 ttyPS0::respawn:-/bin/ash
+
+# Initrc
+::sysinit:/etc/init.d/rcS
 
 # What to do when restarting the init process
 
