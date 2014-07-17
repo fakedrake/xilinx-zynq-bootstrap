@@ -16,8 +16,8 @@ $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	$(call remote-maybe, \
 	$(MAKE) -C $(SOURCES_DIR)/uboot-git $(UBOOT_CONFIG) CROSS_COMPILE="$(GNU_TOOLS_PREFIX)" && \
-	$(MAKE) -C $(SOURCES_DIR)/uboot-git CROSS_COMPILE="$(GNU_TOOLS_PREFIX)" && \
-	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf)
+	$(MAKE) -C $(SOURCES_DIR)/uboot-git CROSS_COMPILE="$(GNU_TOOLS_PREFIX)")
+	cp $(SOURCES_DIR)/uboot-git/u-boot $(RESOURCES_DIR)/u-boot.elf
 
 ## The xilinx commit that works
 # linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
@@ -27,23 +27,26 @@ linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
 # Comment this out if you intend to push stuff
 # linux-git-clone-opts = --depth=20
 GIT_PROJECTS += linux
+KERNEL_CONFIG = thinksilicon_zynq_defconfig
+# KERNEL_CONFIG=thinksilicon_android_defconfig
 
-KERNEL_CONFIG=thinksilicon_zynq_defconfig
-
+# DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-android-hdmi-tsi.dts
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-tsi.dts
+# DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/thinksilicon-board.dts
 DTB_TREE=$(RESOURCES_DIR)/devicetree.dtb
 
 linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
 
 linux-rebuild:
 	$(MAKE) linux-clean
-	$(MAKE) linux-build
+	$(MAKE) linux-build nfsroot
 
 linux-clean:
 	rm -rf $(RESOURCES_DIR)/*Image $(DTB_TREE)
 
 $(DTB_TREE): $(DTS_TREE)
-	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE))
+	@echo "Device tree: $(DTS_TREE) -> $(DTB_TREE)"
+	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
 
 show-dts: $(DTB_TREE)
 	$(call remote-maybe, $(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dtb -O dts $(DTB_TREE))
@@ -56,8 +59,14 @@ $(RESOURCES_DIR)/%Image: $(RESOURCES_DIR)/u-boot.elf | linux gnu-tools $(RESOURC
 	@echo "Building Linux..."
 	$(call remote-maybe, \
 	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) $(KERNEL_CONFIG) -C $(SOURCES_DIR)/linux-git && \
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LOADADDR=0x8000 $*Image -C $(SOURCES_DIR)/linux-git && \
-	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/$*Image $(RESOURCES_DIR)/$*Image)
+	$(MAKE) -C $(SOURCES_DIR)/linux-git \
+		INSTALL_MOD_PATH=$(FILESYSTEM_ROOT) \
+		ARCH=arm \
+		CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
+		LOADADDR=0x8000 \
+		$*Image modules modules_install)
+
+	cp $(SOURCES_DIR)/linux-git/arch/arm/boot/$*Image $(RESOURCES_DIR)/$*Image
 
 # Edit the current config with menuconfig.
 linux-menuconfig:

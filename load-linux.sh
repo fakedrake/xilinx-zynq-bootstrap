@@ -163,6 +163,7 @@ function print_xmd_commands
     echo "connect arm hw
 source $ps7_init_tcl
 ps7_init
+ps7_post_config
 init_user
 source $stub_tcl
 target 64
@@ -204,7 +205,9 @@ function load_linux {
 }
 
 function uboot_commands {
-    echo -e "\nsetenv autoload no"			# Stop a possible autoboot
+    echo ""
+    echo "env default -a"
+    echo "setenv autoload no"			# Stop a possible autoboot
     if [ -n "$bootargs" ]; then
 	echo "setenv bootargs $bootargs"
     fi

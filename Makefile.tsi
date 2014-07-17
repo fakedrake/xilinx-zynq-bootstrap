@@ -14,9 +14,14 @@ thinklcdml-build: $(TLCDML_MODULE) nfsroot
 # This is aware of the kernel headers
 $(TLCDML_MODULE): force | linux-build thinklcdml $(MODULES_DIR)
 	$(call remote-maybe, \
-		cd $(SOURCES_DIR)/thinklcdml-git && \
-		make CROSS_COMPILE=$(GNU_TOOLS_PREFIX) LINUX_HEADERS=$(SOURCES_DIR)/linux-git CONFIG_DEBUG_SECTION_MISMATCH=y)
-	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $(TLCDML_MODULE)
+		$(MAKE) CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
+			LINUX_HEADERS=$(SOURCES_DIR)/linux-git \
+			CONFIG_DEBUG_SECTION_MISMATCH=y \
+			INSTALL_MODS_PATH=$(FILESYSTEM_ROOT) \
+			THINKLCDML_DIR=$(SOURCES_DIR)/thinklcdml-git \
+			-C $(SOURCES_DIR)/thinklcdml-git)
+	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $@
+	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml_old.ko $(MODULES_DIR)/thinklcdml_old.ko
 #	cat $(MODULES_DIR)/modules.dep | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep
 
 thinklcdml-clean:
