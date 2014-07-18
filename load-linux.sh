@@ -154,6 +154,8 @@ function print_xmd_commands
     ubootelf=$resources/u-boot.elf
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
+    hdmi_setup_tcl=$resources/hdmi_setup.tcl
+
 
     if [ -n "$load_bitstream" ]; then
 	bitstream=$resources/bitstream.bit
@@ -164,6 +166,9 @@ function print_xmd_commands
 source $ps7_init_tcl
 ps7_init
 ps7_post_config
+"
+    echo "source $hdmi_setup_tcl
+adv7511_init
 init_user
 source $stub_tcl
 target 64
