@@ -50,12 +50,7 @@ run_minicom='y'
 iface="eth0"
 clientip="192.168.1.50"
 
-
-
-# Select and run xmd, with --print show the command.
-function ll_xmd {
-    mode="$1"
-
+function kill_xmd {
     # Get the xmd executable
     if [ -n "$REMOTE_XMD" ]; then
         # ssh -n means dont steal the standard input.
@@ -67,8 +62,17 @@ function ll_xmd {
     fi
 
     if [ -n "$open_xmd" ]; then
-    	fail "Looks like another xmd is running with pid=$open_xmd and user: $xmd_usr. Try: $REMOTE_XMD kill $open_xmd"
+        kill_cmd="$REMOTE_XMD kill $open_xmd"
+    	echo "Looks like another xmd is running with pid=$open_xmd and user: $xmd_usr."
+        echo "Killing with: $kill_cmd"
+        eval $kill_cmd
     fi
+}
+
+# Select and run xmd, with --print show the command.
+function ll_xmd {
+    mode="$1"
+    kill_xmd
 
     # Find a proper xmd
     if [ -n "$XMD" ]; then
@@ -95,7 +99,8 @@ function ll_xmd {
 	*)
             pipe="/tmp/xmd_pipe$(date +%s)"
 	    mkfifo -m 777 "$pipe"
-            cat $pipe | eval "$REMOTE_XMD $XMD" &
+            (cat $pipe | eval "$REMOTE_XMD $XMD") &
+            trap "kill_xmd" 2
             tee $pipe
             wait
 	    rm "$pipe";;
@@ -160,7 +165,7 @@ function print_xmd_commands
     ubootelf=$resources/u-boot.elf
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
-    hdmi_setup_tcl=$resources/hdmi_setup.tcl
+    hdmi_setup_tcl=$resources/hdmi.tcl
 
 
     if [ -n "$load_bitstream" ]; then
