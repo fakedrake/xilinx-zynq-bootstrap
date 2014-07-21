@@ -154,7 +154,7 @@ function reset_device
 
 function print_xmd_commands
 {
-    resources=$(pwd)/resources
+    resources=$(pwd)/drafts
     if ! [[ -d $resources ]]; then
 	fail "No `pwd`/resources/ dir found."
     fi
@@ -166,6 +166,7 @@ function print_xmd_commands
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
     hdmi_setup_tcl=$resources/hdmi.tcl
+    fsbl=$resources/fsbl.bin
 
 
     if [ -n "$load_bitstream" ]; then
@@ -173,19 +174,13 @@ function print_xmd_commands
 	echo "fpga -f $bitstream"
     fi
 
-    echo "connect arm hw
-source $ps7_init_tcl
-ps7_init
-ps7_post_config
-"
-    echo "source $hdmi_setup_tcl
-adv7511_init
-init_user
-source $stub_tcl
-target 64
+    echo "connect arm hw"
+    echo -e "source $ps7_init_tcl\nps7_init\nps7_post_config\ninit_user"
+    echo -e "source $stub_tcl\ntarget 64"
+#    echo -e "source $hdmi_setup_tcl\nadv7511_init"
 
-dow $ubootelf
-"
+    echo "dow -data $fsbl 0x08000000"
+    echo -e "dow $ubootelf"
 
     if [ -n "$load_uimage" ]; then
 	echo "dow -data $uimage	0x30000000"

@@ -7,7 +7,7 @@ MAKE:=$(MAKE) -j$(MAKETHREADS)
 ROOT_DIR=$(PWD)
 DATA_DIR=$(ROOT_DIR)/data
 SOURCES_DIR=$(ROOT_DIR)/sources
-RESOURCES_DIR=$(ROOT_DIR)/resources
+RESOURCES_DIR?=/var/lib/tftpboot
 # RESOURCES_DIR=/var/lib/tftpboot
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
@@ -52,6 +52,7 @@ include ./Makefile.qemu
 include ./Makefile.tsi
 include ./Makefile.projects
 include ./Makefile.lazy
+include ./Makefile.serials
 include ./Makefile.vars
 
 # Entry Points
@@ -63,3 +64,7 @@ board-ready: linux-build ramdisk-board uboot-build sdk
 # Build everything Qemu related
 .PHONY:
 qemu-ready: qemu-linux-build qemu-ramdisk qemu-build
+
+.PHONY:
+show:
+	@echo "resources: $(RESOURCES_DIR)"

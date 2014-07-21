@@ -1,0 +1,13 @@
+LOAD_LINUX=$(ROOT_DIR)/load-linux.sh
+LOAD_OPTS=--tftp
+
+sync-drafts:
+	rsync -avzr $(RESOURCES_DIR)/* $(DRAFTS_DIR)
+
+.PHONY:
+device-reset: sync-drafts sdk
+	$(LOAD_LINUX) --reset
+
+.PHONY:
+device-reload: sdk device-reset
+	$(LOAD_LINUX) $(LOAD_OPTS) --no-minicom

@@ -5,7 +5,7 @@ GIT_PROJECTS += uboot
 
 uboot-rebuild:
 	rm -f $(RESOURCES_DIR)/u-boot.elf
-	$(MAKE) uboot-build
+	cd $(SOURCES_DIR)/uboot-git && $(MAKE) clean && $(MAKE) uboot-build
 
 uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf
 	@echo "UBoot built successfully!"
@@ -36,6 +36,7 @@ DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-tsi.dts
 DTB_TREE=$(RESOURCES_DIR)/devicetree.dtb
 
 linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE)
+	@echo "Linux: $<"
 
 linux-rebuild:
 	$(MAKE) linux-clean

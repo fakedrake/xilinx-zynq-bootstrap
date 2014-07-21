@@ -1,5 +1,16 @@
+proc sleep {N} {
+   after [expr {int($N * 1000)}]
+}
+
+proc poll_raise {addr mask} {
+    while { [expr {[my_read $addr] & $mask}] == 0x00} {
+        sleep 1
+        puts "Polling: ($addr = [my_read $addr]) & $mask..."
+    }
+}
+
 proc my_read {addr} {
-    return "0x[string range [mrd $addr] end-8 end]"
+    return "0x[string range [mrd $addr] end-8 end-1]"
 }
 
 proc my_write {addr val} {
@@ -13,8 +24,7 @@ proc iic_select {sel} {
     my_write 0xE000400c $sel
     my_write 0xE0004008 0x74
 
-    puts " Select:(*0xE0004010)0x1==[my_read 0xE0004010]"
-    while { [expr {[my_read 0xE0004010] & 0x01}] == 0x00} {}
+    poll_raise 0xE0004010 0x01
 
     my_write 0xE0004000 0x3f4f
     my_write 0xE0004010 0xff
@@ -22,8 +32,7 @@ proc iic_select {sel} {
     my_write 0xE000400c 0x00
     my_write 0xE0004008 0x74
 
-    puts " Select:(*0xE0004010)&0x01 == [my_read 0xE0004010]"
-    while { [expr {[my_read 0xE0004004] & 0x20}] == 0x00} {}
+    poll_raise 0xE0004004 0x20
     puts [format "Seleced: 0x%x" [expr {[my_read 0xe000400c] & 0xff}]]
 }
 
@@ -34,8 +43,7 @@ proc iic_read { daddr raddr} {
     my_write 0xE000400c $raddr
     my_write 0xE0004008 $daddr
 
-    puts " read:(*0xE0004010)&0x01 == [my_read 0xE0004010]"
-    while {[expr {[my_read 0xE0004010] & 0x01}] == 0x00} {}
+    poll_raise 0xE0004010 0x01
 
     my_write 0xE0004000 0x3f5f
     my_write 0xE0004010 0xff
@@ -43,25 +51,24 @@ proc iic_read { daddr raddr} {
     my_write 0xE000400c 0x00
     my_write 0xE0004008 $daddr
 
-    puts " read:(*0xE0004004)&0x20 == [my_read 0xE0004004]"
-    while { [expr {[my_read 0xE0004004] & 0x20}]  == 0x00} {}
+    poll_raise 0xE0004004 0x20
     my_write 0xE0004000 0x3f0f
     set ret [expr {[my_read 0xE000400c] & 0xff} ];
-    puts " read: $raddr -> $ret"
     return $ret
 }
 
 
 proc iic_write {daddr waddr wdata} {
+    puts "write: *($waddr) <- $wdata"
     my_write 0xE0004000 0x3f4e
     my_write 0xE0004010 0xff
     my_write 0xE0004014 0x02
     my_write 0xE000400c $waddr
     my_write 0xE000400c $wdata
     my_write 0xE0004008 $daddr
-    puts " write:(*0xE0004010)&0x1 == [my_read 0xE0004010]"
-    while { [expr {[my_read 0xE0004010] & 0x01}]  == 0x00} {}
-    puts " write: $waddr <- $wdata "
+    poll_raise 0xE0004010 0x01
+    puts "Write success"
+    puts [format "btw reading it yields: 0x%x" [iic_read $daddr $waddr]]
 }
 
 proc tlcdml_init {} {
@@ -93,10 +100,10 @@ proc adv_test {} {
     iic_write 0x39 0x1C 0xFF
     puts "ADV TEST: Should be 0xff==[iic_read 0x39 0x1C]"
 
-    puts "Dump regs"
-    for {set i 0} {$i < 20} { incr i} {
-        puts [format "Register 0x%d => 0x%x" $i [iic_read 0x39 $i]]
-    }
+    # puts "Dump regs"
+    # for {set i 0} {$i < 20} { incr i} {
+    #     puts [format "Register 0x%d => 0x%x" $i [iic_read 0x39 $i]]
+    # }
     puts "ADV tested"
 }
 
