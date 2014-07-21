@@ -1,4 +1,5 @@
 #!/bin/bash
+pathname=$_
 
 # export LD_LIBRARY_PATH=/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/EDK/lib/lin64:/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/ISE/lib/lin64
 # export XILINX=/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/ISE
@@ -57,18 +58,21 @@ function ll_xmd {
 
     # Get the xmd executable
     if [ -n "$REMOTE_XMD" ]; then
-	open_xmd="$($REMOTE_XMD -n pgrep xmd)"
+        # ssh -n means dont steal the standard input.
+	open_xmd="$(eval $REMOTE_XMD -n pgrep xmd)"
+        xmd_usr="$(eval $REMOTE_XMD -n ps aux | awk '($2 == $open_xmd){print $1}')"
     else
 	open_xmd="$(pgrep xmd)"
+        xmd_usr="$(ps aux | awk '($2 == $open_xmd){print $1}')"
     fi
 
     if [ -n "$open_xmd" ]; then
-    	fail "Looks like another xmd is running with pid=$open_xmd. Try: $REMOTE_XMD kill $open_xmd"
+    	fail "Looks like another xmd is running with pid=$open_xmd and user: $xmd_usr. Try: $REMOTE_XMD kill $open_xmd"
     fi
 
     # Find a proper xmd
     if [ -n "$XMD" ]; then
-    	[ ! "$mode" == "--print" ] && echo "Xmd already setup to '$XMD'";
+    	[ ! "$mode" = "--print" ] && echo "XMD setup to '$XMD'";
     elif [ -d $XILINX_BIN_PATH64 ] && [ $(uname -p) = 'x86_64' ]; then
     	XMD=$XILINX_BIN_PATH64/xmd
     elif [ -d $XILINX_BIN_PATH ]; then
@@ -89,10 +93,12 @@ function ll_xmd {
 	"--interactive")
 	    eval "$REMOTE_XMD $XMD";;
 	*)
-	    mkfifo /tmp/pipe
-	    tee pipe
-	    cat pipe | eval "$REMOTE_XMD $XMD"
-	    rm /tmp/pipe;;
+            pipe="/tmp/xmd_pipe$(date +%s)"
+	    mkfifo -m 777 "$pipe"
+            cat $pipe | eval "$REMOTE_XMD $XMD" &
+            tee $pipe
+            wait
+	    rm "$pipe";;
     esac;
 }
 
@@ -205,7 +211,6 @@ fi
 
 
 function load_linux {
-    # In order to have interactive output you may want to make a named pipe for this
     print_xmd_commands | ll_xmd || fail "sending images to device"
 }
 
@@ -245,64 +250,67 @@ function main
     fi
 }
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-	'--reset')
-	    reset_device;
-	    exit 0;;
-	'--minicom')
-	    setup_serial;minicom;
-	    exit 0;;
-	'--which-serial')
-	    ll_serial --print;
-	    exit 0;;
-	'--which-xmd')
-	    ll_xmd --print
-	    exit 0;;
-	'--xmd-shell')
-	    xmd_shell;
-	    exit 0;;
-	'--show-xmd-commands')
-	    print_xmd_commands;
-	    exit 0;;
-	'--bootargs')
-	    shift; bootargs="$1";;
-	'--xmd-extra')
-	    shift; extra_xmd="$1";;
-	'--no-boot')
-	    no_boot="y";;
-	'--no-bitstream')
-	    load_bitstream='';;
-	'--no-minicom')
-	    run_minicom="";;
-	'--no-ramdisk')
-	    load_ramdisk="";;
-	'--no-linux')
-	    load_linux='';;
-	"--no-devtree")
-	    load_devtree='';;
-	'--with-minicom')
-	    run_minicom="y";;
-	'--with-ramdisk')
-	    load_ramdisk="y";;
-	'--with-linux')
-	    load_uimage='y';;
-	"--with-devtree")
-	    load_devtree='y';;
-	"--tftp")
-	    tftp_load="y";
-	    load_devtree="";
-	    load_uimage="";
-	    load_ramdisk="";;
-	'--help')
-	    echo "$HELP_MESSAGE"
-	    exit 0;;
-	*)
-	    echo "Unrecognized option \"$1\"";
-	    exit 1;;
-    esac
-    shift
-done
+if ! [ $pathname = $0 ]; then
 
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+	    '--reset')
+                echo "Resetting device..."
+	        reset_device;
+	        exit 0;;
+	    '--minicom')
+	        setup_serial;minicom;
+	        exit 0;;
+	    '--which-serial')
+	        ll_serial --print;
+	        exit 0;;
+	    '--which-xmd')
+	        ll_xmd --print
+	        exit 0;;
+	    '--xmd-shell')
+	        xmd_shell;
+	        exit 0;;
+	    '--show-xmd-commands')
+	        print_xmd_commands;
+	        exit 0;;
+	    '--bootargs')
+	        shift; bootargs="$1";;
+	    '--xmd-extra')
+	        shift; extra_xmd="$1";;
+	    '--no-boot')
+	        no_boot="y";;
+	    '--no-bitstream')
+	        load_bitstream='';;
+	    '--no-minicom')
+	        run_minicom="";;
+	    '--no-ramdisk')
+	        load_ramdisk="";;
+	    '--no-linux')
+	        load_linux='';;
+	    "--no-devtree")
+	        load_devtree='';;
+	    '--with-minicom')
+	        run_minicom="y";;
+	    '--with-ramdisk')
+	        load_ramdisk="y";;
+	    '--with-linux')
+	        load_uimage='y';;
+	    "--with-devtree")
+	        load_devtree='y';;
+	    "--tftp")
+	        tftp_load="y";
+	        load_devtree="";
+	        load_uimage="";
+	        load_ramdisk="";;
+	    '--help')
+	        echo "$HELP_MESSAGE"
+	        exit 0;;
+	    *)
+	        echo "Unrecognized option \"$1\"";
+	        exit 1;;
+        esac
+        shift
+    done
 
-main
+    main
+fi
