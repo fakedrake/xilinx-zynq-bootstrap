@@ -11,3 +11,9 @@ device-reset: sync-drafts sdk
 .PHONY:
 device-reload: sdk device-reset
 	$(LOAD_LINUX) $(LOAD_OPTS) --no-minicom
+
+.PHONY:
+xmd-shell:
+	@echo "Default xmd commands:"
+	$(LOAD_LINUX) --show-xmd-commands
+	$(LOAD_LINUX) --xmd-shell
