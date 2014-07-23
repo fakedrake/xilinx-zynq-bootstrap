@@ -29,15 +29,16 @@ proc iic_select {sel} {
     my_write 0xE0004000 0x3f4f
     my_write 0xE0004010 0xff
     my_write 0xE0004014 0x01
-    my_write 0xE000400c 0x00
+    #my_write 0xE000400c 0x00
     my_write 0xE0004008 0x74
 
     poll_raise 0xE0004004 0x20
     puts [format "Seleced: 0x%x" [expr {[my_read 0xe000400c] & 0xff}]]
 }
 
+# XXX: This yields always 0x12. Find an I2C ninja to fix it.
 proc iic_read { daddr raddr} {
-    my_write 0xE0004000 0x3f4e
+    my_write 0xE0004000 0x3f5e
     my_write 0xE0004010 0xff
     my_write 0xE0004014 0x01
     my_write 0xE000400c $raddr
@@ -52,7 +53,7 @@ proc iic_read { daddr raddr} {
     my_write 0xE0004008 $daddr
 
     poll_raise 0xE0004004 0x20
-    my_write 0xE0004000 0x3f0f
+#    my_write 0xE0004000 0x3f0f
     set ret [expr {[my_read 0xE000400c] & 0xff} ];
     return $ret
 }
