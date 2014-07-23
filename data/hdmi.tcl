@@ -37,7 +37,7 @@ proc iic_select {sel} {
 }
 
 proc iic_read { daddr raddr} {
-    my_write 0xE0004000 0x3f5e
+    my_write 0xE0004000 0x3f4e
     my_write 0xE0004010 0xff
     my_write 0xE0004014 0x01
     my_write 0xE000400c $raddr
@@ -45,10 +45,10 @@ proc iic_read { daddr raddr} {
 
     poll_raise 0xE0004010 0x01
 
-    my_write 0xE0004000 0x3f5f
+    my_write 0xE0004000 0x3f4f
     my_write 0xE0004010 0xff
     my_write 0xE0004014 0x01
-    my_write 0xE000400c 0x00
+#    my_write 0xE000400c 0x00
     my_write 0xE0004008 $daddr
 
     poll_raise 0xE0004004 0x20
@@ -113,8 +113,16 @@ proc adv7511_init {} {
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     puts "Programming adv7511..."
 
-    iic_select 2
-    adv_test
+    for {set i 0} {$i < 8} { incr i} {
+#        puts "Selected [iic_read 0x0 0x74]"
+
+        puts [format "Selecting 0x%x" [expr 1 << $i]]
+        iic_select [expr 1 << $i]
+    }
+
+    iic_select 0xff
+    iic_select 0x2
+    # adv_test
 
     tlcdml_init
 
