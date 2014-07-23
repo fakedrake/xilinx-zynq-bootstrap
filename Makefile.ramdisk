@@ -44,7 +44,7 @@ FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/passwd
 
 libc-install: | gnu-tools $(FILESYSTEM_ROOT)
-	$(call remote-maybe, rsync -azvr --exclude "*locale/" --exclude "*locale/" $(GNU_TOOLS_LIBC)/* $(FILESYSTEM_ROOT))
+	$(call remote-maybe, rsync -azvr --exclude "*locale/" --exclude "*locales/" $(GNU_TOOLS_LIBC)/* $(FILESYSTEM_ROOT))
 
 
 $(FILESYSTEM_ROOT)/init.sh: $(DATA_DIR)/fdinit.sh
@@ -94,31 +94,31 @@ nfsroot:
 comma=,
 $(RESOURCES_DIR)/ramdisk.img:  $(FILESYSTEM_ROOT)/fs_update | $(DRAFTS_DIR) $(RESOURCES_DIR)
 	@echo "Building ramdisk..."
-	$(call remote-maybe, dd if=/dev/zero of=$(RESOURCES_DIR)/ramdisk.img bs=1024 count=$$(($$(du -s $(FILESYSTEM_ROOT) | awk "{print \$$1}") + 1000)))
-	$(call remote-maybe, mke2fs -t ext2 -F $(RESOURCES_DIR)/ramdisk.img -L "ramdisk" -b 1024 -m 0)
-	$(call remote-maybe, tune2fs $(RESOURCES_DIR)/ramdisk.img -i 0)
+	$(call remote-maybe, dd if=/dev/zero of=$@ bs=1024 count=$$(($$(du -s $(FILESYSTEM_ROOT) | awk "{print \$$1}") + 1000)))
+	$(call remote-maybe, mke2fs -t ext2 -F $@ -L "ramdisk" -b 1024 -m 0)
+	$(call remote-maybe, tune2fs $@ -i 0)
 
-	$(call remote-maybe, mkdir $(DRAFTS_DIR)/ramdisk)
-	$(call remote-maybe, chmod a+w $(RESOURCES_DIR)/ramdisk.img)
+	$(call remote-maybe, mkdir -p $(DRAFTS_DIR)/ramdisk)
+	$(call remote-maybe, chmod a+w $@)
 	@echo "Sudo is used to mount ramdisk..."
-	$(call remote-maybe, sudo mount -v -t ext2 -o loop$(comma)rw $(RESOURCES_DIR)/ramdisk.img $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo mount -v -t ext2 -o loop$(comma)rw $@ $(DRAFTS_DIR)/ramdisk/)
 
-	$(call remote-maybe, sudo cp -R $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/)
+	$(call remote-maybe, sudo rsync -azvr --delete --exclude "*locale/" --exclude "*locales/" $(FILESYSTEM_ROOT)/* $(DRAFTS_DIR)/ramdisk/)
 	$(call remote-maybe, sudo umount $(DRAFTS_DIR)/ramdisk/)
 	$(call remote-maybe, rmdir $(DRAFTS_DIR)/ramdisk/)
 
 ramdisk-umount:
-	$(call remote-maybe, [ "$$(mount -l | grep $(DRAFTS_DIR)/ramdisk)" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
+	$(call remote-maybe, [ -n "$$(mount -l | grep $(DRAFTS_DIR)/ramdisk)" ] && echo "Sudo to unmount ramdisk..." && sudo umount $(DRAFTS_DIR)/ramdisk/ || true)
 
 ramdisk-clean: ramdisk-umount
 	$(call remote-maybe, rm -rf $(DRAFTS_DIR)/ramdisk)
 	$(call remote-maybe, rm -rf $(RESOURCES_DIR)/*ramdisk.img*)
 
-$(RESOURCES_DIR)/ramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img
+$(RESOURCES_DIR)/ramdisk.image.gz: $(RESOURCES_DIR)/ramdisk.img
 	$(call remote-maybe, gzip -9 $(RESOURCES_DIR)/ramdisk.img -c > $@)
 
-$(RESOURCES_DIR)/uramdisk.img.gz: $(RESOURCES_DIR)/ramdisk.img.gz
-	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $(RESOURCES_DIR)/ramdisk.img.gz $@)
+$(RESOURCES_DIR)/uramdisk.image.gz: $(RESOURCES_DIR)/ramdisk.image.gz
+	$(call remote-maybe, $(SOURCES_DIR)/uboot-git/tools/mkimage -A arm -T ramdisk -C gzip -d $< $@)
 
 ramdisk-dev:
 	$(MAKE) ramdisk-clean
