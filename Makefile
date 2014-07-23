@@ -23,6 +23,7 @@ GNU_TOOLS_DIR=GNU_Tools
 FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 
+REMOTE_SERVER=purple
 ifneq ($(REMOTE_SERVER),)
 remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh -t $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
@@ -36,11 +37,6 @@ test_remote:
 
 force: ;
 
-# Targets
-DIRECTORIES = $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(FILESYSTEM_ROOT)
-$(DIRECTORIES):
-	[ -d $@ ] || mkdir -p $@
-
 include ./Makefile.gnutools
 include ./Makefile.kernel
 include ./Makefile.ramdisk
@@ -53,7 +49,13 @@ include ./Makefile.tsi
 include ./Makefile.projects
 include ./Makefile.lazy
 include ./Makefile.serials
+include ./Makefile.sdcard
 include ./Makefile.vars
+
+# Targets
+DIRECTORIES += $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(FILESYSTEM_ROOT)
+$(DIRECTORIES):
+	[ -d $@ ] || mkdir -p $@
 
 # Entry Points
 
