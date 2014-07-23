@@ -2,11 +2,15 @@ SDK_FILES = $(RESOURCES_DIR)/stub.tcl \
 	$(RESOURCES_DIR)/hdmi.tcl \
 	$(RESOURCES_DIR)/ps7_init.tcl \
 	$(RESOURCES_DIR)/bitstream.bit \
-	$(RESOURCES_DIR)/fsbl.bin
+	$(RESOURCES_DIR)/BOOT.bin
 
 .PHONY:
 sdk:$(SDK_FILES)
 
+.PHONY:
+sdk-clean:
+	rm -rf $(SDK_FILES)
+
 .SECONDEXPANSION:
-$(SDK_FILES): $$(@:$(RESOURCES_DIR)=$(DATA_DIR))
+$(SDK_FILES): $$(patsubst $(RESOURCES_DIR)/%,$(DATA_DIR)/%,$$@)
 	cp $< $@
