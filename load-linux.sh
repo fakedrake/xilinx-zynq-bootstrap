@@ -138,7 +138,7 @@ function xmd_shell
 {
     if [ $(command -v rlwrap) ]; then
 	echo "Using rlwrap for history and completion, you are welcome."
-	eval rlwrap $(ll_xmd --print)
+	eval rlwrap -c $(ll_xmd --print)
     else
 	echo "rlwrap not found, running plain xmd"
 	ll_xmd --interactive
@@ -160,13 +160,13 @@ function print_xmd_commands
     fi
 
     uimage=$resources/uImage
-    ramdisk=$resources/uramdisk.img.gz
+    ramdisk=$resources/uramdisk.image.gz
     dtb=$resources/devicetree.dtb
     ubootelf=$resources/u-boot.elf
     ps7_init_tcl=$resources/ps7_init.tcl
     stub_tcl=$resources/stub.tcl
     hdmi_setup_tcl=$resources/hdmi.tcl
-    fsbl=$resources/fsbl.bin
+    boot_bin=$resources/BOOT.bin
 
 
     if [ -n "$load_bitstream" ]; then
@@ -177,9 +177,9 @@ function print_xmd_commands
     echo "connect arm hw"
     echo -e "source $ps7_init_tcl\nps7_init\nps7_post_config\ninit_user"
     echo -e "source $stub_tcl\ntarget 64"
-#    echo -e "source $hdmi_setup_tcl\nadv7511_init"
+    echo -e "source $hdmi_setup_tcl\nadv7511_init"
 
-    echo "dow -data $fsbl 0x08000000"
+   # echo "dow -data $boot_bin 0x08000000"
     echo -e "dow $ubootelf"
 
     if [ -n "$load_uimage" ]; then
