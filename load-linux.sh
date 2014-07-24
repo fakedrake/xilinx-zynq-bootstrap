@@ -218,6 +218,7 @@ function uboot_commands {
     echo ""
     echo "env default -a"
     echo "setenv autoload no"			# Stop a possible autoboot
+    echo "setenv ethaddr $(python -c "import random; print ':'.join([hex(random.randint(0,0x100))[-2:] for _ in range(6)])")"
     if [ -n "$bootargs" ]; then
 	echo "setenv bootargs $bootargs"
     fi
