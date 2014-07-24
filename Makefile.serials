@@ -17,3 +17,7 @@ xmd-shell:
 	@echo "Default xmd commands:"
 	$(LOAD_LINUX) --show-xmd-commands
 	$(LOAD_LINUX) --xmd-shell
+
+.PHONY:
+minicom:
+	$(LOAD_LINUX) --minicom
