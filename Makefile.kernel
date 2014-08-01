@@ -13,8 +13,8 @@ uboot-build: uboot $(RESOURCES_DIR)/u-boot.elf $(RESOURCES_DIR)/uEnv.txt
 $(RESOURCES_DIR)/uEnv.txt: $(DATA_DIR)/uEnv.txt
 	cp $< $@
 
-# UBOOT_CONFIG = zynq_zc70x_config
-UBOOT_CONFIG = zynq_zc70x_tsi_config
+UBOOT_CONFIG = zynq_zc70x_config
+# UBOOT_CONFIG = zynq_zc70x_tsi_config
 
 $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 	@echo "Building U-Boot"

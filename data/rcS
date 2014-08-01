@@ -28,4 +28,7 @@ tcpsvd 0:21 ftpd ftpd -w /&
 echo "++ Starting sshd daemon"
 sshd
 
+echo "++ Testing thinklcdml"
+test_thinklcdml.sh
+
 echo "rcS Complete"

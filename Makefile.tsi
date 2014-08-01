@@ -9,24 +9,27 @@ thinklcdml-git-checkout = refactor
 GIT_PROJECTS += thinklcdml
 TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
 
-thinklcdml-build: $(TLCDML_MODULE) nfsroot
+thinklcdml-build: $(TLCDML_MODULE) $(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh  nfsroot
+
+TLCDML_BUILD_OPTS = CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
+		LINUX_HEADERS=$(SOURCES_DIR)/linux-git \
+		CONFIG_DEBUG_SECTION_MISMATCH=y \
+		INSTALL_MODS_PATH=$(FILESYSTEM_ROOT) \
+		THINKLCDML_DIR=$(SOURCES_DIR)/thinklcdml-git \
+		-C $(SOURCES_DIR)/thinklcdml-git
 
 # This is aware of the kernel headers
 $(TLCDML_MODULE): force | linux-build thinklcdml $(MODULES_DIR)
 	$(call remote-maybe, \
-		$(MAKE) CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
-			LINUX_HEADERS=$(SOURCES_DIR)/linux-git \
-			CONFIG_DEBUG_SECTION_MISMATCH=y \
-			INSTALL_MODS_PATH=$(FILESYSTEM_ROOT) \
-			THINKLCDML_DIR=$(SOURCES_DIR)/thinklcdml-git \
-			-C $(SOURCES_DIR)/thinklcdml-git)
+		$(MAKE) $(TLCDML_BUILD_OPTS))
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml.ko $@
 	cp $(SOURCES_DIR)/thinklcdml-git/thinklcdml_old.ko $(MODULES_DIR)/thinklcdml_old.ko
 #	cat $(MODULES_DIR)/modules.dep | grep thinklcdml.ko || echo "thinklcdml.ko" >> $(MODULES_DIR)/modules.dep
 
 thinklcdml-clean:
-	make clean -C $(SOURCES_DIR)/thinklcdml-git
-	rm $(TLCDML_MODULE)
+	$(MAKE) $(TLCDML_BUILD_OPTS) clean
+	rm -rf $(TLCDML_MODULE)
+	rm -rf $(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh
 
 # Think2D
 think2d-git-repo="git@github.com:fakedrake/Think2D"

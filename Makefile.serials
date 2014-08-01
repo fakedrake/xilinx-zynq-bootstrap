@@ -1,23 +1,55 @@
+LIBUSB=$(SOURCES_DIR)/xlnxusb-git/libusb-driver.so
 LOAD_LINUX=$(ROOT_DIR)/load-linux.sh
+LOAD_LINUX_CMD=$(LOAD_LINUX)
 LOAD_OPTS=--tftp
+
+XLNX_ROOT=/opt/Xilinx/SDK/14.4
+export XILINX=$(XLNX_ROOT)/ISE_DS/ISE
+export XILINX_EDK=$(XLNX_ROOT)/ISE_DS/EDK
+
+export LD_PRELOAD=$(LIBUSB)
+export PAPORT_SETUP=$(SOURCES_DIR)/xlnxusb-git/setup_pcusb
 
 sync-drafts:
 	rsync -avzr $(RESOURCES_DIR)/* $(DRAFTS_DIR)
 
 .PHONY:
-device-reset: sync-drafts sdk
-	$(LOAD_LINUX) --reset
+device-reset: sync-drafts sdk $(LIBUSB)
+	$(LOAD_LINUX_CMD) --reset
 
 .PHONY:
-device-reload: sdk device-reset
-	$(LOAD_LINUX) $(LOAD_OPTS) --no-minicom
+device-reload: sdk device-reset $(LIBUSB)
+	$(LOAD_LINUX_CMD) $(LOAD_OPTS) --no-minicom 2>&1
 
 .PHONY:
-xmd-shell:
+xmd-shell: $(LIBUSB)
 	@echo "Default xmd commands:"
-	$(LOAD_LINUX) --show-xmd-commands
-	$(LOAD_LINUX) --xmd-shell
+	$(LOAD_LINUX_CMD) --show-xmd-commands
+	$(LOAD_LINUX_CMD) --xmd-shell
 
 .PHONY:
 minicom:
-	$(LOAD_LINUX) --minicom
+	$(LOAD_LINUX_CMD) --minicom
+
+.PHONY:
+which-xmd:
+	$(LOAD_LINUX_CMD) --which-xmd
+
+.PHONY:
+show-xmd-commands:
+	$(LOAD_LINUX_CMD) --show-xmd-commands
+
+xlnxusb-git-repo = "git://git.zerfleddert.de/usb-driver"
+GIT_PROJECTS += xlnxusb
+xlnxusb-build: $(LIBUSB)
+
+$(LIBUSB): | xlnxusb
+	make -C $(SOURCES_DIR)/xlnxusb-git
+
+.PHONY:
+setup-pcusb: $(LIBUSB)
+	$(SOURCES_DIR)/xlnxusb-git/setup_pcusb $(XILINX)
+
+show-xmd-env:
+	@echo "export LD_PRELOAD=$(LIBUSB)"
+	@echo "export XILINX=$(XILINX)"

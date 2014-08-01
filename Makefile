@@ -34,23 +34,22 @@ endif
 test_remote:
 	$(call remote-maybe, "hostname")
 
-
 force: ;
 
-include ./Makefile.gnutools
-include ./Makefile.kernel
-include ./Makefile.ramdisk
-include ./Makefile.xilinx-sdk
-include ./Makefile.ssh.def
-include ./Makefile.android
-include ./Makefile.dfb
-include ./Makefile.qemu
-include ./Makefile.tsi
-include ./Makefile.projects
-include ./Makefile.lazy
-include ./Makefile.serials
-include ./Makefile.sdcard
-include ./Makefile.vars
+include $(PWD)/Makefile.gnutools
+include $(PWD)/Makefile.kernel
+include $(PWD)/Makefile.ramdisk
+include $(PWD)/Makefile.xilinx-sdk
+include $(PWD)/Makefile.ssh.def
+include $(PWD)/Makefile.android
+include $(PWD)/Makefile.dfb
+include $(PWD)/Makefile.qemu
+include $(PWD)/Makefile.tsi
+include $(PWD)/Makefile.lazy
+include $(PWD)/Makefile.serials
+include $(PWD)/Makefile.sdcard
+include $(PWD)/Makefile.projects
+include $(PWD)/Makefile.vars
 
 # Targets
 DIRECTORIES += $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(FILESYSTEM_ROOT)
@@ -68,5 +67,5 @@ board-ready: linux-build ramdisk-board uboot-build sdk
 qemu-ready: qemu-linux-build qemu-ramdisk qemu-build
 
 .PHONY:
-show:
-	@echo "resources: $(RESOURCES_DIR)"
+test-tftp:
+	cd /tmp; echo "get uImage" | tftp 192.168.1.22; rm uImage

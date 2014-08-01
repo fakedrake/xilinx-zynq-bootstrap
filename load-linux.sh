@@ -1,4 +1,5 @@
 #!/bin/bash
+
 pathname=$_
 
 # export LD_LIBRARY_PATH=/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/EDK/lib/lin64:/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/ISE/lib/lin64
@@ -6,19 +7,23 @@ pathname=$_
 # export XILINX_EDK=/tools/Xilinx/ISE-SE_Viv-SE/14.4/ISE_DS/EDK
 # export XILINXD_LICENSE_FILE=/tools/licenses/Xilinx_Zynq-7000_EPP_ZC702_IMAGEON_gray.lic
 
-# XLNX=/tools/Xilinx/ISE-SE_Viv-SE/14.4
-# # /tools/Xilinx/ISE/13.2
-# export XILINX=$XLNX/ISE_DS/ISE
-# export XILINX_EDK=$XLNX/ISE_DS/EDK
+# XLNX=/opt/Xilinx/14.4
+# export XILINX=${XILINX:-$XLNX/ISE_DS/ISE}
+# export XILINX_EDK=${XILINX_EDK:-$XLNX/ISE_DS/EDK}
 # XILINX_BIN_PATH=$XLNX/ISE_DS/EDK/bin/lin
 # XILINX_BIN_PATH64=$XLNX/ISE_DS/EDK/bin/lin64
 
-REMOTE_XMD=${REMOTE_XMD:-"ssh cperivol@grey"}
-XMD=${XMD:-/opt/Xilinx/SDK/2013.3/bin/lin64/xmd}
+# REMOTE_XMD=${REMOTE_XMD:-"ssh cperivol@grey"}
+# XMD=${XMD:-$XILINX_EDK/bin/lin64/xmd}
+XMD=/opt/Xilinx/SDK/2014.1/bin/xmd
+
+function eecho {
+   echo "$@" 1>&2;
+}
 
 function fail {
-    echo "[ERROR] Error while $1"
-    exit 1
+    eecho "[ERROR] $1";
+    exit 1;
 }
 
 read -d '' HELP_MESSAGE <<EOF
@@ -113,11 +118,11 @@ function ll_serial
     print_p="$1"
 
     if [ ! $SERIAL ]; then
-	SERIAL=$( ls -d /dev/* | grep ttyUSB | head -1 )
+	SERIAL=$( ls -d /dev/* | grep ttyUSB | tac | head -1 )
     fi
 
 
-    if [ ! $SERIAL ] || [ ! -c $SERIAL ]; then
+    if [ -z "$SERIAL" ] || [ ! -c $SERIAL ]; then
 	fail "No serial port found or the provided is invalid."
     fi
 
@@ -136,9 +141,10 @@ function ll_serial
 
 function xmd_shell
 {
+    ll_xmd --print
     if [ $(command -v rlwrap) ]; then
 	echo "Using rlwrap for history and completion, you are welcome."
-	eval rlwrap -c $(ll_xmd --print)
+        rlwrap -c $(ll_xmd --print)
     else
 	echo "rlwrap not found, running plain xmd"
 	ll_xmd --interactive
@@ -215,10 +221,13 @@ function load_linux {
 }
 
 function uboot_commands {
+    eecho "Stopping autoboot!"
     echo ""
     echo "env default -a"
     echo "setenv autoload no"			# Stop a possible autoboot
-    echo "setenv ethaddr $(python -c "import random; print ':'.join([hex(random.randint(0,0x100))[-2:] for _ in range(6)])")"
+    # echo "setenv ethaddr $(python -c "import random; print ':'.join([hex(random.randint(0,0x100))[-2:] for _ in range(6)])")"
+    # echo "setenv ethaddr 00:0a:35:00:01:22" # the default one
+    echo "setenv ethaddr 29:2f:ad:f9:67:6e" # a random one that works
     if [ -n "$bootargs" ]; then
 	echo "setenv bootargs $bootargs"
     fi
@@ -226,7 +235,11 @@ function uboot_commands {
     if [ -n "$tftp_load" ]; then
 	hostip=$(ifconfig $iface | awk '($1=="inet"){split($2, ip, ":"); print ip[2]}')
 
-	echo "setenv ipaddr $clientip"
+	if [ -n "$clientip" ]; then
+	    echo "setenv ipaddr $clientip"
+	else
+	    echo  "dhcp"
+	fi
 	echo "setenv serverip $hostip"
 	echo "tftpboot 0x30000000 uImage"
 	echo "tftpboot 0x2a000000 devicetree.dtb"
@@ -252,7 +265,6 @@ function main
 }
 
 if ! [ $pathname = $0 ]; then
-
     while [[ $# -gt 0 ]]; do
         case $1 in
 	    '--reset')
@@ -260,7 +272,7 @@ if ! [ $pathname = $0 ]; then
 	        reset_device;
 	        exit 0;;
 	    '--minicom')
-	        setup_serial;minicom;
+	        minicom;
 	        exit 0;;
 	    '--which-serial')
 	        ll_serial --print;

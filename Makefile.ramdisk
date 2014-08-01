@@ -6,6 +6,10 @@ GIT_PROJECTS += busybox
 
 busybox-build: $(FILESYSTEM_ROOT)/busybox_update
 
+busybox-rebuild:
+	rm $(FILESYSTEM_ROOT)/busybox_update
+	$(MAKE) busybox-build
+
 $(FILESYSTEM_ROOT)/busybox_update: | busybox $(FS_DIRS) gnu-tools
 	@echo "Building Busybox..."
 	$(call remote-maybe, cd $(SOURCES_DIR)/busybox-git; \
@@ -41,7 +45,12 @@ DIRECTORIES += $(FS_DIRS)
 FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/inittab \
 	$(FILESYSTEM_ROOT)/etc/init.d/rcS \
-	$(FILESYSTEM_ROOT)/etc/passwd
+	$(FILESYSTEM_ROOT)/etc/passwd \
+	$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh
+
+$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh: $(DATA_DIR)/test_thinklcdml.sh
+	cp $< $@
+	chmod +x $@
 
 libc-install: | gnu-tools $(FILESYSTEM_ROOT)
 	$(call remote-maybe, rsync -azvr --exclude "*locale/" --exclude "*locales/" $(GNU_TOOLS_LIBC)/* $(FILESYSTEM_ROOT))
@@ -60,7 +69,7 @@ $(FILESYSTEM_ROOT)/etc/init.d/rcS: $(DATA_DIR)/rcS | $(FILESYSTEM_ROOT)
 	$(call remote-maybe, chmod 755 $@)
 	@echo "I am about to 'sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS'. No need to worry."
 	if [ "$$(stat --format '%U:%G' $(FILESYSTEM_ROOT)/etc/init.d/rcS)" = "root:root" ]; then \
-		sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS \
+		sudo chown root:root $(FILESYSTEM_ROOT)/etc/init.d/rcS; \
 	fi
 
 $(FILESYSTEM_ROOT)/fs_update: $(FS_DIRS) $(FS_FILES) $(FILESYSTEM_ROOT)/busybox_update | $(FILESYSTEM_ROOT) libc-install
@@ -74,19 +83,19 @@ endif
 	(date && find $(FILESYSTEM_ROOT)) > $@
 
 
-filesystem:  $(FILESYSTEM_ROOT)/fs_update openssh-build
+filesystem:  openssh-build $(FS_DIRS) $(FS_FILES)
 
 filesystem-clean:
 	rm -rf $(FILESYSTEM_ROOT)
 
 ramdisk: ramdisk-board ramdisk-qemu
-ramdisk-board: $(RESOURCES_DIR)/uramdisk.img.gz
+ramdisk-board: $(RESOURCES_DIR)/uramdisk.image.gz
 
 
 # Use this to update NFS_ROOT
 SYNC_CMD=rsync -azvr --delete $(FILESYSTEM_ROOT)/* $(NFS_ROOT)
 .PHONY:
-nfsroot:
+nfsroot: filesystem
 	if ! $(SYNC_CMD); then \
 		sudo $(SYNC_CMD) ; \
 	fi
