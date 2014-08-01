@@ -44,11 +44,12 @@ linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE) $(RESOURCES_DIR)/u-boot.elf
 
 linux-rebuild:
 	$(MAKE) linux-clean
-	$(MAKE) linux-build nfsroot
+	$(MAKE) linux-build
+	$(MAKE) nfsroot
 
 linux-clean:
-	rm -rf $(RESOURCES_DIR)/*Image $(DTB_TREE)
-	$(call remote-maybe, cd $(SOURCES_DIR)/linux-git && $(MAKE) clean)
+	rm -rf $(RESOURCES_DIR)/*Image $(DTB_TREE) $(SOURCES_DIR)/linux-git/arch/arm/boot/*Image
+	$(call remote-maybe, $(MAKE) -C $(SOURCES_DIR)/linux-git clean)
 
 $(DTB_TREE): $(DTS_TREE)
 	@echo "Device tree: $(DTS_TREE) -> $(DTB_TREE)"
@@ -67,16 +68,18 @@ linux-version:
 $(RESOURCES_DIR)/%Image: $(SOURCES_DIR)/linux-git/arch/arm/boot/%Image
 	cp $< $@
 
-$(SOURCES_DIR)/linux-git/arch/arm/boot/$*Image: | linux gnu-tools $(RESOURCES_DIR)
-	@echo "Building Linux..."
-	$(call remote-maybe, \
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(GNU_TOOLS_PREFIX) $(KERNEL_CONFIG) -C $(SOURCES_DIR)/linux-git && \
-	$(MAKE) -C $(SOURCES_DIR)/linux-git \
+LINUX_MAKE_OPTS=-C $(SOURCES_DIR)/linux-git \
 		INSTALL_MOD_PATH=$(FILESYSTEM_ROOT) \
 		ARCH=arm \
 		CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
-		LOADADDR=0x8000 \
-		$*Image modules modules_install)
+		LOADADDR=0x8000
+
+$(SOURCES_DIR)/linux-git/arch/arm/boot/%Image: | linux gnu-tools $(RESOURCES_DIR)
+	@echo "Building Linux..."
+	$(call remote-maybe, \
+	$(MAKE) $(LINUX_MAKE_OPTS) $(KERNEL_CONFIG) && \
+	$(MAKE) $(LINUX_MAKE_OPTS) $*Image && \
+	$(MAKE) $(LINUX_MAKE_OPTS) modules modules_install)
 
 
 # Edit the current config with menuconfig.
