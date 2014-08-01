@@ -1,0 +1,55 @@
+SDCARD_DEV = $(shell blkid -c /dev/null -L boot -n vfat | head -1 )
+SDCARD_MNT = $(DRAFTS_DIR)/sdcard-mnt
+DIRECTORIES += $(SDCARD_MNT)
+
+# With this variable you can control what goes into the sdcard.
+SDCARD_FILES = $(SDCARD_MNT)/BOOT.bin $(SDCARD_MNT)/devicetree.dtb $(SDCARD_MNT)/uImage $(SDCARD_MNT)/uramdisk.image.gz $(SDCARD_MNT)/uEnv.txt
+
+SDCARD_MOUNT_OPTS = "rw,nosuid,nodev,uid=517,gid=500,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks"
+
+with-sdcard-dev = if [ -n "$(SDCARD_DEV)" ]; then ($(1)); else echo "[ERROR] Couldn't find sdcard device."; false; fi;
+sdcard-if-mnt = $(call with-sdcard-dev, if mount -l | grep $(SDCARD_DEV) > /dev/null; then ($(1)); fi)
+sdcard-if-not-mnt = $(call with-sdcard-dev, if ! mount -l | grep $(SDCARD_DEV) > /dev/null ; then ($(1)); fi)
+sdcard-if-mnt-nonlocal = $(call with-sdcard-dev, if mount -l | grep $(SDCARD_DEV) > /dev/null && ! mount -l | grep $(SDCARD_DEV) | grep $(SDCARD_MNT) > /dev/null; then ($(1)); fi)
+
+
+.PHONY:
+sdcard-unmount-maybe: | $(SDCARD_DEV)
+	$(call sdcard-if-mnt-nonlocal, sudo umount $(SDCARD_DEV))
+
+.PHONY:
+sdcard-unmount: | $(SDCARD_DEV)
+	$(call sdcard-if-mnt, sudo umount $(SDCARD_DEV))
+
+.PHONY:
+sdcard-mount: sdcard-unmount-maybe | $(SDCARD_DEV) $(SDCARD_MNT)
+	$(call sdcard-if-not-mnt, sudo mount -o $(SDCARD_MOUNT_OPTS) $(SDCARD_DEV) $(SDCARD_MNT))
+	@echo "SDcard $(SDCARD_DEV) mounted at $(SDCARD_MNT)"
+
+.PHONY:
+sdcard-ls: sdcard-mount
+	ls $(SDCARD_MNT)
+
+
+sdcard_backup_dir=$(SDCARD_MNT)/backup.$(shell date +%F_%H.%M.%S)
+
+DIRECTORIES += $(sdcard_backup_dir)
+.PHONY:
+sdcard-backup: $(SDCARD_FILES:$(SDCARD_MNT)/%=$(sdcard_backup_dir)/%) sdcard-cleanup-backup-dirs
+
+$(sdcard_backup_dir)/%: sdcard-mount
+	cp $@ $(SDCARD_MNT)/$* 2> /dev/null || echo "Didn't find $* in sdcard"
+
+.PHONY:
+sdcard-cleanup-backup-dirs:
+	# Cleanup of empty backup directories.
+	for bakdir in $(SDCARD_MNT)/backup.*; do \
+		rmdir $$bakdir 2> /dev/null || echo "$$bakdir is valid backup"; \
+	done
+
+.SECONDEXPANSION:
+$(SDCARD_FILES): $$(patsubst $(SDCARD_MNT)/%, $(RESOURCES_DIR)/%, $$@) sdcard-backup
+	cp $< $@
+
+.PHONY:
+sdcard: $(SDCARD_FILES) sdcard-unmount
