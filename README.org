@@ -1,4 +1,22 @@
+* TL;DR
+** User facing targets
+   Building/rebuilding stuff
+
+   - =board-ready= /build everything/
+   - =linux-rebuild=
+   - ={tlcdml,think2d}-build=
+   - =nfsroot=
+   - =sdcard=
+
+   Board manipulation (over serial):
+
+   - =device-{reload,reset}=
+   - =minicom=
+   - =xmd-shell=
+   - =show-xmd-commands=
+
 * Usage
+
 ** Building for Zynq
    To bootstrap the sw stack for a zynq board you first need to build everything with
 
