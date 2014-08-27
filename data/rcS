@@ -29,6 +29,6 @@ echo "++ Starting sshd daemon"
 sshd
 
 echo "++ Testing thinklcdml"
-test_thinklcdml.sh
+source /bin/test_thinklcdml.sh
 
 echo "rcS Complete"

@@ -1,13 +1,11 @@
-# Definable
-
 MAKETHREADS=4
 MAKE:=$(MAKE) -j$(MAKETHREADS)
 
 # My directories
-ROOT_DIR=$(PWD)
+ROOT_DIR=$(CURDIR)
 DATA_DIR=$(ROOT_DIR)/data
 SOURCES_DIR=$(ROOT_DIR)/sources
-RESOURCES_DIR?=/var/lib/tftpboot
+RESOURCES_DIR?=$(ROOT_DIR)/resources
 # RESOURCES_DIR=/var/lib/tftpboot
 DRAFTS_DIR=$(ROOT_DIR)/drafts
 TOOLS_DIR=$(ROOT_DIR)/tools
@@ -23,9 +21,9 @@ GNU_TOOLS_DIR=GNU_Tools
 FILESYSTEM_ROOT=$(ROOT_DIR)/fs
 
 
-REMOTE_SERVER=purple
+# REMOTE_SERVER=purple
 ifneq ($(REMOTE_SERVER),)
-remote-maybe=echo "==== Running on $(REMOTE_SERVER) ====" && ssh -t $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
+remote-maybe=@echo "==== Running on $(REMOTE_SERVER) ====" && ssh -t $(REMOTE_SERVER) 'PATH=$(PATH) && $1'
 else
 remote-maybe=$1
 endif
@@ -36,20 +34,20 @@ test_remote:
 
 force: ;
 
-include $(PWD)/Makefile.gnutools
-include $(PWD)/Makefile.kernel
-include $(PWD)/Makefile.ramdisk
-include $(PWD)/Makefile.xilinx-sdk
-include $(PWD)/Makefile.ssh.def
-include $(PWD)/Makefile.android
-include $(PWD)/Makefile.dfb
-include $(PWD)/Makefile.qemu
-include $(PWD)/Makefile.tsi
-include $(PWD)/Makefile.lazy
-include $(PWD)/Makefile.serials
-include $(PWD)/Makefile.sdcard
-include $(PWD)/Makefile.projects
-include $(PWD)/Makefile.vars
+include $(CURDIR)/Makefile.gnutools
+include $(CURDIR)/Makefile.kernel
+include $(CURDIR)/Makefile.ramdisk
+include $(CURDIR)/Makefile.xilinx-sdk
+include $(CURDIR)/Makefile.ssh.def
+include $(CURDIR)/Makefile.android
+include $(CURDIR)/Makefile.dfb
+include $(CURDIR)/Makefile.qemu
+include $(CURDIR)/Makefile.tsi
+include $(CURDIR)/Makefile.lazy
+include $(CURDIR)/Makefile.serials
+include $(CURDIR)/Makefile.sdcard
+include $(CURDIR)/Makefile.projects
+include $(CURDIR)/Makefile.vars
 
 # Targets
 DIRECTORIES += $(SOURCES_DIR) $(DRAFTS_DIR) $(RESOURCES_DIR) $(TOOLS_DIR) $(LAZY_DIR) $(FILESYSTEM_ROOT)

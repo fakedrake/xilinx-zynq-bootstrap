@@ -11,6 +11,14 @@ show-projects:
 # <project>-git-repo - URI of the repo to clone
 # <project>-git-checkout - Something to checkout (commit/branch/etc)
 # <project>-git-clone-opts - Extra options for cloning
+# You can see all those with the target 'show-%-git'
+
+.PHONY:
+$(GIT_PROJECTS:%=show-%-vars)::
+	@echo "$(@:show-%-vars=%-git-repo) = $($(@:show-%-vars=%-git-repo))"
+	@echo "$(@:show-%-vars=%-git-checkout) = $($(@:show-%-vars=%-git-checkout))"
+	@echo "$(@:show-%-vars=%-git-clone-opts) = $($(@:show-%-vars=%-git-cone-opts))"
+
 .PHONY:
 .SECONDEXPANSION :
 $(GIT_PROJECTS) : $(SOURCES_DIR)/$$@-git

@@ -26,20 +26,24 @@ $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 ## The xilinx commit that works
 # linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
 # linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
-
-linux-git-repo=git@github.com:fakedrake/linux-thinksilicon
+linux-git-repo=http://github.com:fakedrake/linux-thinksilicon
+linux-git-checkout=thinksilicon
 # Comment this out if you intend to push stuff
 # linux-git-clone-opts = --depth=20
 GIT_PROJECTS += linux
 KERNEL_CONFIG = thinksilicon_zynq_defconfig
 # KERNEL_CONFIG=thinksilicon_android_defconfig
-
 # DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-android-hdmi-tsi.dts
 DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/zynq-zc702-tsi.dts
 # DTS_TREE=$(SOURCES_DIR)/linux-git/arch/arm/boot/dts/thinksilicon-board.dts
 DTB_TREE=$(RESOURCES_DIR)/devicetree.dtb
 
-linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE) $(RESOURCES_DIR)/u-boot.elf
+show-linux-vars::
+	@echo "KERNEL_CONFIG = $(KERNEL_CONFIG)"
+	@echo "DTS_TREE = $(DTB_TREE)"
+	@echo "DTB_TREE = $(DTB_TREE)"
+
+linux-build: $(RESOURCES_DIR)/uImage $(DTB_TREE) $(RESOURCES_DIR)/u-boot.elf | linux
 	@echo "Linux: $<"
 
 linux-rebuild:
@@ -49,8 +53,11 @@ linux-rebuild:
 
 linux-clean:
 	rm -rf $(RESOURCES_DIR)/*Image $(DTB_TREE) $(SOURCES_DIR)/linux-git/arch/arm/boot/*Image
+
+linux-clean-deep: linux-clean
 	$(call remote-maybe, $(MAKE) -C $(SOURCES_DIR)/linux-git clean)
 
+$(DTS_TREE): | linux
 $(DTB_TREE): $(DTS_TREE)
 	@echo "Device tree: $(DTS_TREE) -> $(DTB_TREE)"
 	$(SOURCES_DIR)/linux-git/scripts/dtc/dtc -I dts -O dtb -o $(DTB_TREE) $(DTS_TREE)
@@ -77,10 +84,10 @@ LINUX_MAKE_OPTS=-C $(SOURCES_DIR)/linux-git \
 $(SOURCES_DIR)/linux-git/arch/arm/boot/%Image: | linux gnu-tools $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	$(call remote-maybe, \
-	$(MAKE) $(LINUX_MAKE_OPTS) $(KERNEL_CONFIG) && \
-	$(MAKE) $(LINUX_MAKE_OPTS) $*Image && \
-	$(MAKE) $(LINUX_MAKE_OPTS) modules modules_install)
-
+		$(MAKE) $(LINUX_MAKE_OPTS) $(KERNEL_CONFIG) && \
+		$(MAKE) $(LINUX_MAKE_OPTS) $*Image && \
+		$(MAKE) $(LINUX_MAKE_OPTS) modules && \
+		$(MAKE) $(LINUX_MAKE_OPTS) modules_install)
 
 # Edit the current config with menuconfig.
 linux-menuconfig:
