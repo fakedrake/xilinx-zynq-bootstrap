@@ -1,0 +1,5 @@
+#!/bin/sh
+echo "Running profile..."
+echo "++ Loading thinklcdml tests"
+. /bin/test_thinklcdml.sh
+echo "\tYou may run tlcdml_test to test the lcd driver."

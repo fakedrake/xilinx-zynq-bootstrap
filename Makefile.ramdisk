@@ -46,7 +46,9 @@ FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/inittab \
 	$(FILESYSTEM_ROOT)/etc/init.d/rcS \
 	$(FILESYSTEM_ROOT)/etc/passwd \
-	$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh
+	$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh \
+	$(FILESYSTEM_ROOT)/etc/profile
+
 
 $(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh: $(DATA_DIR)/test_thinklcdml.sh
 	cp $< $@
