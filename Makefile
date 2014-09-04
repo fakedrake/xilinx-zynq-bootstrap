@@ -58,7 +58,7 @@ $(DIRECTORIES):
 
 # Build everything board related
 .PHONY:
-board-ready: linux-build ramdisk-board uboot-build sdk
+board-ready: linux-build uboot-build sdk ramdisk-board
 
 # Build everything Qemu related
 .PHONY:

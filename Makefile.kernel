@@ -16,7 +16,7 @@ $(RESOURCES_DIR)/uEnv.txt: $(DATA_DIR)/uEnv.txt
 UBOOT_CONFIG = zynq_zc70x_config
 # UBOOT_CONFIG = zynq_zc70x_tsi_config
 
-$(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
+$(RESOURCES_DIR)/u-boot.elf: | uboot gnu-tools  $(RESOURCES_DIR)
 	@echo "Building U-Boot"
 	$(call remote-maybe, \
 	$(MAKE) -C $(SOURCES_DIR)/uboot-git $(UBOOT_CONFIG) CROSS_COMPILE="$(GNU_TOOLS_PREFIX)" && \
@@ -26,7 +26,7 @@ $(RESOURCES_DIR)/u-boot.elf: | gnu-tools  $(RESOURCES_DIR)
 ## The xilinx commit that works
 # linux-git-repo=git://github.com/Xilinx/linux-xlnx.git
 # linux-git-commit=3f7c2d54957e950b3a36a251578185bfd374562c
-linux-git-repo=http://github.com:fakedrake/linux-thinksilicon
+linux-git-repo=http://github.com/fakedrake/linux-thinksilicon
 linux-git-checkout=thinksilicon
 # Comment this out if you intend to push stuff
 # linux-git-clone-opts = --depth=20

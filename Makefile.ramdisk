@@ -32,6 +32,7 @@ FS_DIRS = $(FILESYSTEM_ROOT)/lib  \
 	$(FILESYSTEM_ROOT)/var/log  \
 	$(FILESYSTEM_ROOT)/var/www  \
 	$(FILESYSTEM_ROOT)/sbin  \
+	$(FILESYSTEM_ROOT)/bin \
 	$(FILESYSTEM_ROOT)/usr/  \
 	$(FILESYSTEM_ROOT)/usr/bin \
 	$(FILESYSTEM_ROOT)/usr/lib \
@@ -50,7 +51,7 @@ FS_FILES = $(FILESYSTEM_ROOT)/etc/fstab \
 	$(FILESYSTEM_ROOT)/etc/profile
 
 
-$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh: $(DATA_DIR)/test_thinklcdml.sh
+$(FILESYSTEM_ROOT)/bin/test_thinklcdml.sh: $(DATA_DIR)/test_thinklcdml.sh | $(DIRECTORIES)
 	cp $< $@
 	chmod +x $@
 

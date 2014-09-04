@@ -7,14 +7,14 @@ XLNX_ROOT=/opt/Xilinx/SDK/14.4
 export XILINX=$(XLNX_ROOT)/ISE_DS/ISE
 export XILINX_EDK=$(XLNX_ROOT)/ISE_DS/EDK
 
-export LD_PRELOAD=$(LIBUSB)
+# export LD_PRELOAD=$(LIBUSB)
 export PAPORT_SETUP=$(SOURCES_DIR)/xlnxusb-git/setup_pcusb
 
 sync-drafts:
 	rsync -avzr $(RESOURCES_DIR)/* $(DRAFTS_DIR)
 
 .PHONY:
-device-reset: sync-drafts sdk $(LIBUSB)
+device-reset: sync-drafts sdk $(LIBUSB) LD_PRELOAD=$(LIBUSB)
 	$(LOAD_LINUX_CMD) --reset
 
 .PHONY:
@@ -22,7 +22,7 @@ device-reload: sdk device-reset $(LIBUSB)
 	$(LOAD_LINUX_CMD) $(LOAD_OPTS) --no-minicom 2>&1
 
 .PHONY:
-xmd-shell: $(LIBUSB)
+xmd-shell: $(LIBUSB) LD_PRELOAD=$(LIBUSB)
 	@echo "Default xmd commands:"
 	$(LOAD_LINUX_CMD) --show-xmd-commands
 	$(LOAD_LINUX_CMD) --xmd-shell
@@ -47,7 +47,7 @@ $(LIBUSB): | xlnxusb
 	make -C $(SOURCES_DIR)/xlnxusb-git
 
 .PHONY:
-setup-pcusb: $(LIBUSB)
+setup-pcusb: $(LIBUSB) LD_PRELOAD=$(LIBUSB)
 	$(SOURCES_DIR)/xlnxusb-git/setup_pcusb $(XILINX)
 
 show-xmd-env:
