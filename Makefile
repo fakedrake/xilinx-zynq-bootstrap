@@ -14,7 +14,7 @@ MODULES_DIR=$(FILESYSTEM_ROOT)/lib/modules/$(shell cat $(SOURCES_DIR)/linux-git/
 
 DEBUG_LIBS=y
 
-GNU_TOOLS_FTP="ftp://83.212.100.45/Code/zynq_gnu_tools.tar.gz"
+GNU_TOOLS_FTP="http://people.csail.mit.edu/cperivol/storage/zynq_gnu_tools.tar.gz"
 GNU_TOOLS_ZIP=$(shell basename $(GNU_TOOLS_FTP))
 GNU_TOOLS_DIR=GNU_Tools
 
