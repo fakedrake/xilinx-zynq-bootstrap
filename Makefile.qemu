@@ -15,7 +15,7 @@ QEMU = $(TOOLS_DIR)/bin/qemu-system-arm
 QEMU_KERNEL = $(RESOURCES_DIR)/zImage
 
 ## A ramdisk
-QEMU_RAMDISK = $(RESOURCES_DIR)/ramdisk.img.gz
+QEMU_RAMDISK = $(RESOURCES_DIR)/ramdisk.image.gz
 
 ## Networking
 # NET="-redir tcp:5555::80 -redir tcp:5556::445"
@@ -38,12 +38,17 @@ GIT_PROJECTS += qemu
 qemu-build: $(QEMU) $(QEMU_KERNEL) $(DTB_TREE) $(QEMU_RAMDISK)
 
 $(QEMU): | qemu $(TOOLS_DIR)/python
-	$(call remote-maybe,  cd $(SOURCES_DIR)/qemu-git; \
+	$(call remote-maybe, cd $(SOURCES_DIR)/qemu-git; \
 	git submodule update --init dtc &&  \
 	git submodule update --init pixman &&  \
-	./configure --without-system-pixman --enable-debug --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python && $(MAKE) && $(MAKE) install )
+	./configure --without-system-pixman --enable-debug --prefix=$(TOOLS_DIR) --target-list="arm-softmmu" --enable-fdt --disable-kvm --disable-werror --python=$(TOOLS_DIR)/python)
+	$(call remote-maybe, $(MAKE) CFLAGS='-std=gnu90' ARFLAGS=rv -C $(SOURCES_DIR)/qemu-git)
+	$(call remote-maybe, $(MAKE) -C $(SOURCES_DIR)/qemu-git install)
 
 qemu-run: qemu-build
+	grep $(FILESYSTEM_ROOT) /etc/exports || ( \
+		echo "I need to read from nfs:\n\techo '$(FILESYSTEM_ROOT) *(rw,sync,no_subtree_check)' >> /etc/exports" && \
+		false)
 	$(QEMU) $(QEMU_ARGS) $(BOOTCMD)
 
 

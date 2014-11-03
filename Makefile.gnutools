@@ -23,15 +23,16 @@ $(REPO): $(TOOLS_DIR)/python | $(TOOLS_DIR)
 
 PYTHON_V2=$(shell python2 --version 2>&1)
 PYTHON_V=$(shell python --version 2>&1)
+PYTHON =
 
 .SECONDARY:
 $(TOOLS_DIR)/python: | $(TOOLS_DIR)
-	if [ -n $(PYTHON) ]; then ln $(PYTHON) $@; fi
+	if [ -n "$(PYTHON)" ]; then ln $(PYTHON) $@; fi
 
-	! [ -f $@ ] && \
+	(! [ -f $@ ]) && \
 	case "$(PYTHON_V)" in "Python 2.7."*) \
 		ln -s $(shell which python) $@;; esac;
 
-	! [ -f $@ ] && \
+	(! [ -f $@ ]) && \
 	case "$(PYTHON_V2)" in "Python 2.7."*) \
 		ln -s $(shell which python2) $@;; esac;

@@ -81,7 +81,7 @@ LINUX_MAKE_OPTS=-C $(SOURCES_DIR)/linux-git \
 		CROSS_COMPILE=$(GNU_TOOLS_PREFIX) \
 		LOADADDR=0x8000
 
-$(SOURCES_DIR)/linux-git/arch/arm/boot/%Image: | linux gnu-tools $(RESOURCES_DIR)
+$(SOURCES_DIR)/linux-git/arch/arm/boot/%Image: | $(RESOURCES_DIR)/u-boot.elf linux gnu-tools $(RESOURCES_DIR)
 	@echo "Building Linux..."
 	$(call remote-maybe, \
 		$(MAKE) $(LINUX_MAKE_OPTS) $(KERNEL_CONFIG) && \
