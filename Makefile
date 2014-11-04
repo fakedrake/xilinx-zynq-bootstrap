@@ -46,6 +46,7 @@ include $(CURDIR)/Makefile.tsi
 include $(CURDIR)/Makefile.lazy
 include $(CURDIR)/Makefile.serials
 include $(CURDIR)/Makefile.sdcard
+include $(CURDIR)/Makefile.serial_driver
 include $(CURDIR)/Makefile.projects
 include $(CURDIR)/Makefile.vars
 

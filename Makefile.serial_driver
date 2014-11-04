@@ -1,0 +1,11 @@
+fakeserial-git-repo="git@github.com:fakedrake/SerialDriver"
+GIT_PROJECTS += fakeserial
+FS_MODULE=$(MODULES_DIR)/fake_serial.ko
+fakeserial-build: fakeserial $(FS_MODULE)
+
+.ONESHELL:
+$(FS_MODULE): linux-lazy fakeserial | $(MODULES_DIR)
+	$(MAKE) -C $(SOURCES_DIR)/fakeserial-git XILINX_BOOTSTRAP=$(ROOT_DIR)
+
+fakeserial-clean:
+	$(MAKE) -C $(SOURCES_DIR)/think2d-git clean

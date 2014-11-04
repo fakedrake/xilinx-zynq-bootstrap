@@ -3,8 +3,7 @@ PATH:=$(PATH):$(GNU_TOOLS_BIN)
 .PHONY: force
 force:
 # ThinkLCDML
-# thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
-thinklcdml-git-repo = /tools/GITROOT/Tsi_ThinkLCDML_driver.git/
+thinklcdml-git-repo="git@github.com:fakedrake/ThinkLCDML"
 thinklcdml-git-checkout = refactor
 GIT_PROJECTS += thinklcdml
 TLCDML_MODULE=$(MODULES_DIR)/thinklcdml.ko
